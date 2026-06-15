@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: assessment_feedback_db
+    environment:
+      POSTGRES_DB: assessment_feedback
+      POSTGRES_USER: assessment_user
+      POSTGRES_PASSWORD: assessment_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U assessment_user -d assessment_feedback"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: assessment_feedback_backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/assessment_feedback
+      SPRING_DATASOURCE_USERNAME: assessment_user
+      SPRING_DATASOURCE_PASSWORD: assessment_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app
+      - maven-cache:/root/.m2
+
+  frontend:
+    build: ./frontend
+    container_name: assessment_feedback_frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      VITE_API_BASE_URL: /api
+
+volumes:
+  postgres-data:
+  maven-cache:
