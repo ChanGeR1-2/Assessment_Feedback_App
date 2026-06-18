@@ -2,6 +2,7 @@ package com.dissertation.backend.common;
 
 import com.dissertation.backend.app_users.exceptions.EmailExistsException;
 import com.dissertation.backend.app_users.exceptions.UserNotFoundException;
+import com.dissertation.backend.auth.exceptions.InvalidPasswordException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -14,6 +15,13 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(InvalidPasswordException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidPasswordException(InvalidPasswordException ex) {
+        Map<String, String> map = new HashMap<>();
+        map.put("message", ex.getMessage());
+        return new ResponseEntity<>(map, HttpStatus.UNAUTHORIZED);
+    }
+
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleUserNotFound (
             UserNotFoundException ex

@@ -4,6 +4,8 @@ import com.dissertation.backend.app_users.dto.CreateUserRequest;
 import com.dissertation.backend.app_users.dto.UserResponse;
 import com.dissertation.backend.app_users.exceptions.EmailExistsException;
 import com.dissertation.backend.app_users.exceptions.UserNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,8 +13,10 @@ import java.util.List;
 @Service
 public class UserService {
     private final UserRepository userRepository;
-    public UserService(UserRepository userRepository) {
+    private final PasswordEncoder passwordEncoder;
+    public UserService(UserRepository userRepository,  PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<UserResponse> getAllUsers() {
@@ -35,7 +39,7 @@ public class UserService {
         AppUser user = new AppUser();
         user.setFullName(createUserRequest.fullName());
         user.setEmail(createUserRequest.email());
-        user.setPasswordHash(createUserRequest.password());
+        user.setPasswordHash(passwordEncoder.encode(createUserRequest.password()));
         user.setRole(createUserRequest.role());
         AppUser savedUser = userRepository.save(user);
 
