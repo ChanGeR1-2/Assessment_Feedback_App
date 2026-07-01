@@ -23,7 +23,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: docker,dev
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/assessment_feedback
       SPRING_DATASOURCE_USERNAME: assessment_user
       SPRING_DATASOURCE_PASSWORD: assessment_password

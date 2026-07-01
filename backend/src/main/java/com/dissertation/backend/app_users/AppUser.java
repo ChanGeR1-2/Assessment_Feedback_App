@@ -28,6 +28,15 @@ public class AppUser {
         }
     }
 
+    public AppUser() {}
+
+    public AppUser(String fullName, String email, String passwordHash, UserRole role) {
+        this.fullName = fullName;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.role = role;
+    }
+
     public String getFullName() {
         return fullName;
     }

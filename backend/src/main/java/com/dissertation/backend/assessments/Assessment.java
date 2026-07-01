@@ -19,6 +19,14 @@ public class Assessment {
     @JoinColumn(name = "module_id",  nullable = false)
     private CourseModule module;
 
+    protected Assessment() {}
+
+    public Assessment(String title, LocalDateTime dueDate, CourseModule module) {
+        this.title = title;
+        this.dueDate = dueDate;
+        this.module = module;
+    }
+
     public Long getId() {
         return id;
     }

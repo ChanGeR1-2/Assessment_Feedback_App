@@ -1,17 +1,31 @@
-import {useEffect, useState} from "react";
-import {getUsers} from "../api/usersApi.js";
+import { useEffect, useState } from "react";
+import {
+    Alert,
+    Badge, Button,
+    Group,
+    Loader, Modal,
+    Paper,
+    Select,
+    Stack,
+    Table,
+    Text,
+    Title
+} from "@mantine/core";
+import { getUsers } from "../api/usersApi.js";
+import {useDisclosure} from "@mantine/hooks";
+import CreateUserForm from "../components/CreateUserForm.jsx";
 
 const UsersPage = () => {
     const [users, setUsers] = useState([]);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(true);
     const [role, setRole] = useState("");
+    const [opened, {open, close}] = useDisclosure(false);
 
     useEffect(() => {
         async function loadUsers() {
             try {
                 const data = await getUsers();
-                console.log(data);
                 setUsers(data);
                 setError("");
             } catch (error) {
@@ -25,34 +39,109 @@ const UsersPage = () => {
         loadUsers();
     }, []);
 
+    const filteredUsers = users.filter((user) => {
+        return role === "" || user.role === role;
+    });
+
     if (loading) {
         return (
-            <p>Loading... </p>
-        )
+            <Group justify="center" mt="xl">
+                <Loader />
+            </Group>
+        );
     }
 
-    if (error) return <p>{error}</p>;
+    if (error) {
+        return (
+            <Alert color="red" title="Error">
+                {error}
+            </Alert>
+        );
+    }
 
     return (
-        <div>
-            <h1>Users</h1>
-            <label htmlFor="role">Role</label>
-            <select name="role" id="role" value={role} onChange={(e) => setRole(e.target.value)}>
-                <option value="">All</option>
-                <option value="LECTURER">Lecturer</option>
-                <option value="ADMIN">Admin</option>
-                <option value="STUDENT">Student</option>
-            </select>
-            <ul>
-                {users.filter(user => user.role === role || role === "")
-                    .map((user) => (
-                        <li key={user.id}>
-                            {user.fullName} - {user.email} - {user.role}
-                        </li>
-                    ))}
-            </ul>
-        </div>
-    )
+        <Stack gap="lg">
+            <div>
+                <Title order={1}>Users</Title>
+                <Text c="dimmed">
+                    View and filter registered users.
+                </Text>
+            </div>
+
+            <Paper withBorder p="md" radius="md">
+                <Group justify="space-between" align="end">
+                    <Select
+                        label="Role"
+                        placeholder="All roles"
+                        value={role}
+                        onChange={(value) => setRole(value || "")}
+                        data={[
+                            {
+                                value: "",
+                                label: "All"
+                            },
+                            {
+                                value: "LECTURER",
+                                label: "Lecturer"
+                            },
+                            {
+                                value: "ADMIN",
+                                label: "Admin"
+                            },
+                            {
+                                value: "STUDENT",
+                                label: "Student"
+                            }
+                        ]}
+                        w={240}
+                    />
+                    <Stack>
+                        <Modal opened={opened} onClose={close} title="Create User" centered>
+                            <CreateUserForm></CreateUserForm>
+                        </Modal>
+                        <Button variant="default" onClick={open}>
+                            Create User
+                        </Button>
+                        <Text size="sm" c="dimmed">
+                            Showing {filteredUsers.length} of {users.length} users
+                        </Text>
+                    </Stack>
+                </Group>
+            </Paper>
+
+            <Paper withBorder radius="md" overflow="hidden">
+                {filteredUsers.length === 0 ? (
+                    <Text p="md" c="dimmed">
+                        No users found.
+                    </Text>
+                ) : (
+                    <Table striped highlightOnHover>
+                        <Table.Thead>
+                            <Table.Tr>
+                                <Table.Th>Name</Table.Th>
+                                <Table.Th>Email</Table.Th>
+                                <Table.Th>Role</Table.Th>
+                            </Table.Tr>
+                        </Table.Thead>
+
+                        <Table.Tbody>
+                            {filteredUsers.map((user) => (
+                                <Table.Tr key={user.id}>
+                                    <Table.Td>{user.fullName}</Table.Td>
+                                    <Table.Td>{user.email}</Table.Td>
+                                    <Table.Td>
+                                        <Badge variant="light">
+                                            {user.role}
+                                        </Badge>
+                                    </Table.Td>
+                                </Table.Tr>
+                            ))}
+                        </Table.Tbody>
+                    </Table>
+                )}
+            </Paper>
+        </Stack>
+    );
 };
 
 export default UsersPage;

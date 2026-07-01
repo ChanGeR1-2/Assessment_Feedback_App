@@ -1,12 +1,9 @@
-import Navbar from "../components/layout/Navbar.jsx";
-import {Outlet} from "react-router";
 
 const AdminDashboard = () => {
     return (
-        <main className="App">
-            <Navbar />
-            <Outlet />
-        </main>
+        <div>
+            <h1>Dashboard</h1>
+        </div>
     )
 };
 

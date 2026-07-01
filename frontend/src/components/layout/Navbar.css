@@ -1,32 +1,25 @@
-.navbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 32px;
-    border-bottom: 1px solid #ddd;
-    background-color: #ffffff;
+.sidebar-navbar {
+    width: 240px;
+    min-height: 100vh;
+    background-color: #1f2937;
+    padding: 24px 16px;
+    border-right: 1px solid #111827;
 }
 
-.navbar-brand {
-    font-size: 1.2rem;
+.sidebar-navbar__title {
+    color: white;
+    font-size: 1.1rem;
     font-weight: 700;
+    margin-bottom: 24px;
 }
 
-.navbar-links {
-    display: flex;
-    gap: 20px;
+.sidebar-navbar__link {
+    background-color: #1f2937;
+    color: white;
+    border-radius: 8px;
 }
 
-.navbar-links a {
-    text-decoration: none;
-    font-weight: 500;
-    padding-bottom: 4px;
-}
-
-.navbar-links a:hover {
-    text-decoration: underline;
-}
-
-.navbar-links a.active {
-    border-bottom: 2px solid currentColor;
+.sidebar-navbar__link:hover {
+    background-color: #374151;
+    color: white;
 }

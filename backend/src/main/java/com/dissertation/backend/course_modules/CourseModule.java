@@ -21,8 +21,17 @@ public class CourseModule {
     @Column(name = "academic_year", nullable = false)
     private String academicYear;
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lecturer_id")
-    private AppUser moduleOwner;
+    @JoinColumn(name = "lecturer_id", nullable = true)
+    private AppUser lecturer;
+
+    protected CourseModule() {}
+
+    public CourseModule(String title, String code, String academicYear, AppUser lecturer) {
+        this.title = title;
+        this.code = code;
+        this.academicYear = academicYear;
+        this.lecturer = lecturer;
+    }
 
     public Long getId() {
         return id;
@@ -52,11 +61,11 @@ public class CourseModule {
         this.academicYear = academicYear;
     }
 
-    public AppUser getModuleOwner() {
-        return moduleOwner;
+    public AppUser getLecturer() {
+        return lecturer;
     }
 
-    public void setModuleOwner(AppUser moduleOwner) {
-        this.moduleOwner = moduleOwner;
+    public void setLecturer(AppUser moduleOwner) {
+        this.lecturer = moduleOwner;
     }
 }

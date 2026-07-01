@@ -1,37 +1,16 @@
-.login-page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 32px;
+* {
+    box-sizing: border-box;
 }
 
-.login-form {
-    width: 100%;
-    max-width: 420px;
-    padding: 32px;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    background-color: #ffffff;
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    color: #222;
 }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 16px;
-}
-
-.form-group label {
-    margin-bottom: 6px;
-    font-weight: 600;
-}
-
-.form-group input {
-    padding: 10px 12px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-}
-
-.error-message {
-    margin-bottom: 16px;
+button,
+input,
+select,
+textarea {
+    font: inherit;
 }
