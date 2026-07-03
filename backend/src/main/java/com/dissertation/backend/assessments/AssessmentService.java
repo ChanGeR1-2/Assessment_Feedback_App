@@ -28,7 +28,7 @@ public class AssessmentService {
     public AssessmentResponse getAssessment(Long id) {
         return assessmentRepository.findById(id)
                 .map(this::toResponse)
-                .orElseThrow(AssessmentNotFoundException::new);
+                .orElseThrow(() -> new AssessmentNotFoundException(id));
     }
 
     public AssessmentResponse createAssessment(CreateAssessmentRequest request) {

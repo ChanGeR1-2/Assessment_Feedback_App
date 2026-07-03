@@ -2,12 +2,20 @@ package com.dissertation.backend.common;
 
 import com.dissertation.backend.app_users.exceptions.EmailExistsException;
 import com.dissertation.backend.app_users.exceptions.UserNotFoundException;
+import com.dissertation.backend.assessments.exceptions.AssessmentNotFoundException;
 import com.dissertation.backend.assessments.exceptions.InvalidModuleException;
 import com.dissertation.backend.auth.exceptions.InvalidPasswordException;
+import com.dissertation.backend.common.exceptions.InvalidRoleException;
 import com.dissertation.backend.course_modules.exceptions.ModuleExistsException;
 import com.dissertation.backend.course_modules.exceptions.ModuleNotFoundException;
+import com.dissertation.backend.enrolment.exceptions.EnrolmentExistsException;
+import com.dissertation.backend.feedback.exceptions.FeedbackExistsException;
+import com.dissertation.backend.feedback.exceptions.FeedbackNotFoundException;
+import com.dissertation.backend.feedback.exceptions.StudentNotEnrolledException;
+import com.dissertation.backend.feedback.exceptions.UnauthorisedLecturerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -34,6 +42,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return messageResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
+    // --- Forbidden ---
+
+    @ExceptionHandler(UnauthorisedLecturerException.class)
+    public ResponseEntity<Map<String, String>> handleUnauthorisedLecturer(UnauthorisedLecturerException ex) {
+        return messageResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
     // --- Not found ---
 
     @ExceptionHandler(ModuleNotFoundException.class)
@@ -43,6 +58,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleUserNotFound(UserNotFoundException ex) {
+        return messageResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(AssessmentNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleAssessmentNotFound(AssessmentNotFoundException ex) {
+        return messageResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(FeedbackNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleFeedbackNotFound(FeedbackNotFoundException ex) {
         return messageResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
@@ -58,10 +83,41 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return messageResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(EnrolmentExistsException.class)
+    public ResponseEntity<Map<String, String>> handleEnrolmentExists(EnrolmentExistsException ex) {
+        return messageResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(FeedbackExistsException.class)
+    public ResponseEntity<Map<String, String>> handleFeedbackExists(FeedbackExistsException ex) {
+        return messageResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, String>> handleDataIntegrity(DataIntegrityViolationException ex) {
+        log.warn("Data integrity violation", ex);
+        return messageResponse(HttpStatus.CONFLICT, "The operation conflicts with existing data");
+    }
+
     // --- Bad requests ---
 
     @ExceptionHandler(InvalidModuleException.class)
     public ResponseEntity<Map<String, String>> handleInvalidModule(InvalidModuleException ex) {
+        return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidRoleException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidRole(InvalidRoleException ex) {
+        return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(StudentNotEnrolledException.class)
+    public ResponseEntity<Map<String, String>> handleStudentNotEnrolled(StudentNotEnrolledException ex) {
+        return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
         return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 

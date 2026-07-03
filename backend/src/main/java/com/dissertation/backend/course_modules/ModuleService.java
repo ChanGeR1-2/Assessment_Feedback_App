@@ -52,7 +52,7 @@ public class ModuleService {
     @Transactional
     public ModuleResponse assignModuleLecturer(AssignModuleRequest request, Long moduleId) {
         CourseModule module = moduleRepository.findById(moduleId)
-                .orElseThrow(ModuleNotFoundException::new);
+                .orElseThrow(() -> new ModuleNotFoundException(moduleId));
         AppUser lecturer = userRepository.findById(request.lecturerId())
                 .orElseThrow(() -> new UserNotFoundException(request.lecturerId()));
         module.setLecturer(lecturer);
