@@ -25,6 +25,12 @@ public class AssessmentService {
                 .toList();
     }
 
+    public List<AssessmentResponse> getAssessmentsByModuleId(Long moduleId) {
+        return assessmentRepository.findByModuleId(moduleId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public AssessmentResponse getAssessment(Long id) {
         return assessmentRepository.findById(id)
                 .map(this::toResponse)
@@ -43,6 +49,6 @@ public class AssessmentService {
     }
 
     private AssessmentResponse toResponse(Assessment assessment) {
-        return new AssessmentResponse(assessment.getTitle(), assessment.getDueDate(), assessment.getModule().getId());
+        return new AssessmentResponse(assessment.getId(), assessment.getTitle(), assessment.getDueDate(), assessment.getModule().getId());
     }
 }

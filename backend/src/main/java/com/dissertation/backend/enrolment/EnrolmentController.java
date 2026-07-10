@@ -18,9 +18,11 @@ public class EnrolmentController {
         this.enrolmentService = enrolmentService;
     }
 
+
+    // TODO: Implement security
     @GetMapping
-    public ResponseEntity<List<UserResponse>> getEnrolledStudents(@RequestParam Long moduleId) {
-        return new ResponseEntity<>(enrolmentService.getEnrolledStudents(moduleId), HttpStatus.OK);
+    public ResponseEntity<List<UserResponse>> getEnrolledStudents(@RequestParam(required = false) Long moduleId, @RequestParam(required = false) Long lecturerId) {
+        return ResponseEntity.ok(enrolmentService.getEnrolledStudents(lecturerId, moduleId));
     }
 
     @PostMapping

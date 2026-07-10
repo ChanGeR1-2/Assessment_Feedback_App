@@ -1,38 +1,87 @@
 import "./Navbar.css";
-import { Stack, NavLink as MantineNavLink, Text, Box } from "@mantine/core";
+import { Stack, NavLink as MantineNavLink, Box } from "@mantine/core";
 import { NavLink as RouterNavLink } from "react-router";
+import { useEffect, useState } from "react";
+import { getModules } from "../../api/modulesApi.js";
+import { notifications } from "@mantine/notifications";
 
-const adminLinks = [
-    {
-        ref: "/admin",
-        label: "Dashboard"
-    },
-    {
-        ref: "/admin/users",
-        label: "Users"
+const getCurrentUser = () => {
+    try {
+        return JSON.parse(localStorage.getItem("currentUser"));
+    } catch {
+        return null;
     }
-];
+};
 
-const Navbar = () => {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+const Navbar = ({ onNavigate }) => {
+    const currentUser = getCurrentUser();
+    const [modules, setModules] = useState([]);
+
+    const linksByRole = {
+        ADMIN: [
+            { to: "/admin-dashboard", label: "Dashboard" },
+            { to: "/users", label: "Users" },
+        ],
+        LECTURER: [
+            { to: "/lecturer-dashboard", label: "Dashboard" },
+            { to: "/modules", label: "Modules" },
+        ],
+        STUDENT: [
+            { to: "/student-dashboard", label: "Dashboard" },
+        ],
+    };
+    const links = linksByRole[currentUser?.role] ?? [];
+
+    useEffect(() => {
+        if (currentUser?.role !== "LECTURER" || !currentUser?.id) return;
+
+        let cancelled = false;
+        const loadModules = async () => {
+            try {
+                const data = await getModules({ lecturerId: currentUser.id });
+                if (!cancelled) setModules(data);
+            } catch (error) {
+                if (!cancelled) {
+                    notifications.show({ title: "Error", message: error.message, color: "red" });
+                }
+            }
+        };
+        loadModules();
+        return () => { cancelled = true; };
+    }, [currentUser?.id, currentUser?.role]);
 
     return (
         <Box component="nav" className="sidebar-navbar">
-            <Text className="sidebar-navbar__title">
-                Assessment Feedback
-            </Text>
-
             <Stack gap="xs">
-                {currentUser?.role === "ADMIN" &&
-                    adminLinks.map((link) => (
+                {links.map((link) =>
+                    link.label === "Modules" ? (
                         <MantineNavLink
-                            key={link.ref}
+                            key={link.to}
+                            label={link.label}
+                            className="sidebar-navbar__link"
+                        >
+                            {modules.map((module) => (
+                                <MantineNavLink
+                                    key={module.id}
+                                    component={RouterNavLink}
+                                    to={`/modules/${module.id}/assessments`}
+                                    label={module.title}
+                                    onClick={onNavigate}
+                                    className="sidebar-navbar__link"
+                                />
+                            ))}
+                        </MantineNavLink>
+                    ) : (
+                        <MantineNavLink
+                            key={link.to}
                             component={RouterNavLink}
-                            to={link.ref}
+                            to={link.to}
+                            onClick={onNavigate}
                             label={link.label}
                             className="sidebar-navbar__link"
                         />
-                    ))}
+                    )
+                )}
             </Stack>
         </Box>
     );

@@ -22,8 +22,8 @@ public class ModuleService {
         this.userRepository = userRepository;
     }
 
-    public List<ModuleResponse> getAllModules() {
-        return moduleRepository.findAll().stream()
+    public List<ModuleResponse> getAllModules(Long lecturerId) {
+        return moduleRepository.findByLecturerId(lecturerId).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -47,6 +47,12 @@ public class ModuleService {
 
         CourseModule savedModule = moduleRepository.save(module);
         return toResponse(savedModule);
+    }
+
+    public ModuleResponse getModuleById(Long id) {
+        return moduleRepository.findById(id)
+                .map(this::toResponse)
+                .orElseThrow(() -> new ModuleNotFoundException(id));
     }
 
     @Transactional

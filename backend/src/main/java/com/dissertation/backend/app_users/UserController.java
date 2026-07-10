@@ -20,8 +20,8 @@ public class UserController {
     }
 
     @GetMapping
-    public List<UserResponse> getUsers() {
-        return userService.getAllUsers();
+    public ResponseEntity<List<UserResponse>> getUsers(@RequestParam(required = false) UserRole role) {
+        return new ResponseEntity<>(userService.getAllUsers(role), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")

@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-    Alert,
-    Badge, Button,
+    Badge,
+    Button,
     Group,
-    Loader, Modal,
+    Loader,
+    Modal,
     Paper,
     Select,
     Stack,
@@ -12,60 +13,74 @@ import {
     Title
 } from "@mantine/core";
 import { getUsers } from "../api/usersApi.js";
-import {useDisclosure} from "@mantine/hooks";
+import { useDisclosure } from "@mantine/hooks";
 import CreateUserForm from "../components/CreateUserForm.jsx";
+import { notifications } from "@mantine/notifications";
+import { useSearchParams } from "react-router";
 
 const UsersPage = () => {
     const [users, setUsers] = useState([]);
-    const [error, setError] = useState("");
     const [loading, setLoading] = useState(true);
-    const [role, setRole] = useState("");
-    const [opened, {open, close}] = useDisclosure(false);
+    const [opened, { open, close }] = useDisclosure(false);
+
+    const [searchParams, setSearchParams] = useSearchParams();
+    const role = searchParams.get("role") || "";
+
+    const loadUsers = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await getUsers({ role: role || null });
+            setUsers(data);
+        } catch (error) {
+            notifications.show({
+                title: "Error",
+                message: error.message,
+                color: "red"
+            });
+        } finally {
+            setLoading(false);
+        }
+    }, [role]);
 
     useEffect(() => {
-        async function loadUsers() {
+        let cancelled = false;
+
+        async function load() {
+            setLoading(true);
             try {
-                const data = await getUsers();
-                setUsers(data);
-                setError("");
+                const data = await getUsers({ role: role || null });
+                if (!cancelled) setUsers(data);
             } catch (error) {
-                setError(error.message);
-                setUsers([]);
+                if (!cancelled) {
+                    notifications.show({
+                        title: "Error",
+                        message: error.message,
+                        color: "red"
+                    });
+                }
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         }
 
+        load();
+        return () => { cancelled = true; };
+    }, [role]);
+
+    const handleRoleChange = (value) => {
+        setSearchParams(value ? { role: value } : {});
+    };
+
+    const handleCreateSuccess = () => {
+        close();
         loadUsers();
-    }, []);
-
-    const filteredUsers = users.filter((user) => {
-        return role === "" || user.role === role;
-    });
-
-    if (loading) {
-        return (
-            <Group justify="center" mt="xl">
-                <Loader />
-            </Group>
-        );
-    }
-
-    if (error) {
-        return (
-            <Alert color="red" title="Error">
-                {error}
-            </Alert>
-        );
-    }
+    };
 
     return (
         <Stack gap="lg">
             <div>
                 <Title order={1}>Users</Title>
-                <Text c="dimmed">
-                    View and filter registered users.
-                </Text>
+                <Text c="dimmed">View and filter registered users.</Text>
             </div>
 
             <Paper withBorder p="md" radius="md">
@@ -74,46 +89,37 @@ const UsersPage = () => {
                         label="Role"
                         placeholder="All roles"
                         value={role}
-                        onChange={(value) => setRole(value || "")}
+                        onChange={handleRoleChange}
                         data={[
-                            {
-                                value: "",
-                                label: "All"
-                            },
-                            {
-                                value: "LECTURER",
-                                label: "Lecturer"
-                            },
-                            {
-                                value: "ADMIN",
-                                label: "Admin"
-                            },
-                            {
-                                value: "STUDENT",
-                                label: "Student"
-                            }
+                            { value: "", label: "All" },
+                            { value: "LECTURER", label: "Lecturer" },
+                            { value: "ADMIN", label: "Admin" },
+                            { value: "STUDENT", label: "Student" }
                         ]}
                         w={240}
                     />
-                    <Stack>
-                        <Modal opened={opened} onClose={close} title="Create User" centered>
-                            <CreateUserForm></CreateUserForm>
-                        </Modal>
+                    <Stack gap="xs">
                         <Button variant="default" onClick={open}>
                             Create User
                         </Button>
                         <Text size="sm" c="dimmed">
-                            Showing {filteredUsers.length} of {users.length} users
+                            Showing {users.length} users
                         </Text>
                     </Stack>
                 </Group>
             </Paper>
 
-            <Paper withBorder radius="md" overflow="hidden">
-                {filteredUsers.length === 0 ? (
-                    <Text p="md" c="dimmed">
-                        No users found.
-                    </Text>
+            <Modal opened={opened} onClose={close} title="Create User" centered>
+                <CreateUserForm onSuccess={handleCreateSuccess} />
+            </Modal>
+
+            <Paper withBorder radius="md" style={{ overflow: "hidden" }}>
+                {loading ? (
+                    <Group justify="center" p="xl">
+                        <Loader />
+                    </Group>
+                ) : users.length === 0 ? (
+                    <Text p="md" c="dimmed">No users found.</Text>
                 ) : (
                     <Table striped highlightOnHover>
                         <Table.Thead>
@@ -123,16 +129,13 @@ const UsersPage = () => {
                                 <Table.Th>Role</Table.Th>
                             </Table.Tr>
                         </Table.Thead>
-
                         <Table.Tbody>
-                            {filteredUsers.map((user) => (
+                            {users.map((user) => (
                                 <Table.Tr key={user.id}>
                                     <Table.Td>{user.fullName}</Table.Td>
                                     <Table.Td>{user.email}</Table.Td>
                                     <Table.Td>
-                                        <Badge variant="light">
-                                            {user.role}
-                                        </Badge>
+                                        <Badge variant="light">{user.role}</Badge>
                                     </Table.Td>
                                 </Table.Tr>
                             ))}

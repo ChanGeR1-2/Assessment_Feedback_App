@@ -14,6 +14,9 @@ import { notifications } from "@mantine/notifications";
 
 import { loginUser } from "../../api/authApi.js";
 
+import "./LoginPage.css";
+
+
 const LoginPage = () => {
     const navigate = useNavigate();
     const [submitting, setSubmitting] = useState(false);
@@ -46,7 +49,7 @@ const LoginPage = () => {
             });
 
             if (user.role === "ADMIN") {
-                navigate("/admin");
+                navigate("/admin-dashboard");
             } else if (user.role === "LECTURER") {
                 navigate("/lecturer-dashboard");
             } else {

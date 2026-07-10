@@ -38,7 +38,9 @@ public class FeedbackService {
     private FeedbackResponse toResponse(Feedback feedback) {
         return new FeedbackResponse(
                 feedback.getId(),
+                feedback.getAssessment().getTitle(),
                 feedback.getAssessment().getId(),
+                feedback.getStudent().getFullName(),
                 feedback.getStudent().getId(),
                 feedback.getLecturer().getId(),
                 feedback.getMark().intValue(),
@@ -76,6 +78,13 @@ public class FeedbackService {
         return feedbackRepository.findByAssessmentIdAndStudentId(assessmentId, studentId)
                 .map(this::toResponse)
                 .orElseThrow(() -> new FeedbackNotFoundException(assessmentId, studentId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<FeedbackResponse> getFeedbackByAssessmentId(Long assessmentId) {
+        return feedbackRepository.findByAssessmentId(assessmentId).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     // TODO: SECURITY

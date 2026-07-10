@@ -11,7 +11,7 @@ FROM (VALUES
           ('AS2', TIMESTAMP '2026-12-15 23:59:00', 'CS101'),
           ('AS3', TIMESTAMP '2027-02-15 23:59:00', 'CS101'),
           ('AS1', TIMESTAMP '2027-01-12 23:59:00', 'CS202'),
-          ('AS1', TIMESTAMP '2027-03-18 23:59:00', 'CS202'),
-          ('AS1', TIMESTAMP '2027-05-27 23:59:00', 'CS202')
+          ('AS2', TIMESTAMP '2027-03-18 23:59:00', 'CS202'),
+          ('AS3', TIMESTAMP '2027-05-27 23:59:00', 'CS202')
      ) AS v(title, due_date, code)
          JOIN course_module m ON m.code = v.code AND m.academic_year = '2026/2027';

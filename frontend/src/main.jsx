@@ -14,6 +14,10 @@ import AdminDashboard from "./pages/AdminDashboard.jsx";
 import LoginPage from "./pages/auth/LoginPage.jsx";
 import AppLayout from "./components/layout/AppLayout.jsx";
 import ProtectedRoute from "./pages/auth/ProtectedRoute.jsx";
+import LecturerDashboard from "./pages/LecturerDashboard.jsx";
+import AssessmentsPage from "./pages/AssessmentsPage.jsx";
+import AssessmentSubmissionsPage from "./pages/AssessmentSubmissionsPage.jsx";
+import StudentFeedbackPage from "./pages/StudentFeedbackPage.jsx";
 
 const router = createBrowserRouter([
     {
@@ -32,12 +36,33 @@ const router = createBrowserRouter([
                 element: <ProtectedRoute allowedRoles={["ADMIN"]} />,
                 children: [
                     {
-                        path: "admin",
+                        path: "admin-dashboard",
                         element: <AdminDashboard />,
                     },
                     {
-                        path: "admin/users",
+                        path: "users",
                         element: <UsersPage />
+                    }
+                ]
+            },
+            {
+                element: <ProtectedRoute allowedRoles={["LECTURER"]} />,
+                children: [
+                    {
+                        path: "lecturer-dashboard",
+                        element: <LecturerDashboard />
+                    },
+                    {
+                        path: "modules/:moduleId/assessments",
+                        element: <AssessmentsPage />
+                    },
+                    {
+                        path: "modules/:moduleId/assessments/:assessmentId/students",
+                        element: <AssessmentSubmissionsPage />
+                    },
+                    {
+                        path: "modules/:moduleId/assessments/:assessmentId/students/:studentId/feedback",
+                        element: <StudentFeedbackPage />
                     }
                 ]
             }

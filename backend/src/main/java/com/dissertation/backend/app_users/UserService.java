@@ -20,8 +20,8 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
+    public List<UserResponse> getAllUsers(UserRole role) {
+        return userRepository.findAllByRole(role).stream()
                 .map(this::toResponse)
                 .toList();
     }

@@ -4,7 +4,7 @@ import {useState} from "react";
 import {notifications} from "@mantine/notifications";
 import {createUser} from "../api/usersApi.js";
 
-const CreateUserForm = () => {
+const CreateUserForm = ({onSuccess}) => {
     const [submitting, setSubmitting] = useState(false);
 
     const form = useForm({
@@ -42,6 +42,7 @@ const CreateUserForm = () => {
                 message: "User created successfully"
             });
             form.reset();
+            onSuccess();
         } catch (e) {
             notifications.show({
                 title: "User creation failed",

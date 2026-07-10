@@ -8,5 +8,6 @@ import java.util.Optional;
 public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     boolean existsByAssessmentIdAndStudentId(Long assessmentId, Long studentId);
     List<Feedback> findByStudentId(Long studentId);
+    List<Feedback> findByAssessmentId(Long assessmentId);
     Optional<Feedback> findByAssessmentIdAndStudentId(Long assessmentId, Long studentId);
 }

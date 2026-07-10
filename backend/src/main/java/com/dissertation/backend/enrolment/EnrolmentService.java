@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class EnrolmentService {
@@ -40,11 +41,19 @@ public class EnrolmentService {
         return new EnrolmentResponse(saved.getId(), user.getId(), module.getId(), saved.getEnrolledAt());
     }
 
-    @Transactional(readOnly = true)
-    public List<UserResponse> getEnrolledStudents(Long moduleId) {
-        return enrolmentRepository.findByModuleId(moduleId).stream()
+    private List<UserResponse> toStudentResponses(List<Enrolment> enrolments) {
+        return enrolments.stream()
                 .map(Enrolment::getStudent)
+                .collect(Collectors.toMap(AppUser::getId, s -> s, (a, b) -> a))
+                .values().stream()
                 .map(s -> new UserResponse(s.getId(), s.getFullName(), s.getEmail(), s.getRole()))
                 .toList();
     }
+
+
+    @Transactional(readOnly = true)
+    public List<UserResponse> getEnrolledStudents(Long lecturerId, Long moduleId) {
+        return toStudentResponses(enrolmentRepository.findByLecturerId(lecturerId, moduleId));
+    }
+
 }

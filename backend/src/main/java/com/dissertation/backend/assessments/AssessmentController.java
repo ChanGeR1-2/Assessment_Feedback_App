@@ -10,24 +10,28 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/assessments")
 public class AssessmentController {
     private final AssessmentService assessmentService;
     public AssessmentController(AssessmentService assessmentService) {
         this.assessmentService = assessmentService;
     }
 
-    @GetMapping
+    @GetMapping("/api/assessments")
     public ResponseEntity<List<AssessmentResponse>> getAllAssessments() {
         return ResponseEntity.ok(assessmentService.getAllAssessments());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/api/assessments/{id}")
     public ResponseEntity<AssessmentResponse> getAssessment(@PathVariable Long id) {
         return ResponseEntity.ok(assessmentService.getAssessment(id));
     }
 
-    @PostMapping
+    @GetMapping("/api/modules/{moduleId}/assessments")
+    public ResponseEntity<List<AssessmentResponse>> getAssessmentsByModuleId(@PathVariable Long moduleId) {
+        return ResponseEntity.ok(assessmentService.getAssessmentsByModuleId(moduleId));
+    }
+
+    @PostMapping("/api/assessments")
     public ResponseEntity<AssessmentResponse> createAssessment(@Valid @RequestBody CreateAssessmentRequest request) {
         return new ResponseEntity<>(assessmentService.createAssessment(request), HttpStatus.CREATED);
     }

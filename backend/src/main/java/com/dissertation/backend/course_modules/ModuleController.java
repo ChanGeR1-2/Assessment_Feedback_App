@@ -19,8 +19,13 @@ public class ModuleController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ModuleResponse>> getAllModules() {
-        return ResponseEntity.ok(moduleService.getAllModules());
+    public ResponseEntity<List<ModuleResponse>> getAllModules(@RequestParam(required = false) Long lecturerId) {
+        return ResponseEntity.ok(moduleService.getAllModules(lecturerId));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ModuleResponse> getModuleById(@PathVariable Long id) {
+        return ResponseEntity.ok(moduleService.getModuleById(id));
     }
 
     @PostMapping

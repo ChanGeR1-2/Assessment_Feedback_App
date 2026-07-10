@@ -4,7 +4,9 @@ import java.time.LocalDateTime;
 
 public record FeedbackResponse(
         Long id,
+        String assessmentTitle,
         Long assessmentId,
+        String studentFullName,
         Long studentId,
         Long lecturerId,
         Integer mark,
