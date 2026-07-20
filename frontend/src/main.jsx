@@ -18,6 +18,7 @@ import LecturerDashboard from "./pages/LecturerDashboard.jsx";
 import AssessmentsPage from "./pages/AssessmentsPage.jsx";
 import AssessmentSubmissionsPage from "./pages/AssessmentSubmissionsPage.jsx";
 import StudentFeedbackPage from "./pages/StudentFeedbackPage.jsx";
+import AssessmentDetailsPage from "./pages/AssessmentDetailsPage.jsx";
 
 const router = createBrowserRouter([
     {
@@ -55,6 +56,10 @@ const router = createBrowserRouter([
                     {
                         path: "modules/:moduleId/assessments",
                         element: <AssessmentsPage />
+                    },
+                    {
+                        path: "modules/:moduleId/assessments/:assessmentId",
+                        element: <AssessmentDetailsPage />
                     },
                     {
                         path: "modules/:moduleId/assessments/:assessmentId/students",

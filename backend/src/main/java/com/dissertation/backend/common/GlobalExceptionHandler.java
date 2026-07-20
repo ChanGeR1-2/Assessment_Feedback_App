@@ -4,15 +4,13 @@ import com.dissertation.backend.app_users.exceptions.EmailExistsException;
 import com.dissertation.backend.app_users.exceptions.UserNotFoundException;
 import com.dissertation.backend.assessments.exceptions.AssessmentNotFoundException;
 import com.dissertation.backend.assessments.exceptions.InvalidModuleException;
+import com.dissertation.backend.assessments.exceptions.MarkingItemNotFoundException;
 import com.dissertation.backend.auth.exceptions.InvalidPasswordException;
 import com.dissertation.backend.common.exceptions.InvalidRoleException;
 import com.dissertation.backend.course_modules.exceptions.ModuleExistsException;
 import com.dissertation.backend.course_modules.exceptions.ModuleNotFoundException;
 import com.dissertation.backend.enrolment.exceptions.EnrolmentExistsException;
-import com.dissertation.backend.feedback.exceptions.FeedbackExistsException;
-import com.dissertation.backend.feedback.exceptions.FeedbackNotFoundException;
-import com.dissertation.backend.feedback.exceptions.StudentNotEnrolledException;
-import com.dissertation.backend.feedback.exceptions.UnauthorisedLecturerException;
+import com.dissertation.backend.feedback.exceptions.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -71,6 +69,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return messageResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(MarkingItemNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleMarkingItemNotFound(MarkingItemNotFoundException ex) {
+        return messageResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
     // --- Conflicts ---
 
     @ExceptionHandler(EmailExistsException.class)
@@ -121,7 +124,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    // --- Bean validation (@Valid) — overrides the parent's handler ---
+    @ExceptionHandler(DuplicateMarkingItemException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicateMarkingItem(DuplicateMarkingItemException ex) {
+        return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(

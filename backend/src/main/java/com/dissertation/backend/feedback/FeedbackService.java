@@ -6,21 +6,26 @@ import com.dissertation.backend.app_users.UserRole;
 import com.dissertation.backend.app_users.exceptions.UserNotFoundException;
 import com.dissertation.backend.assessments.Assessment;
 import com.dissertation.backend.assessments.AssessmentRepository;
+import com.dissertation.backend.assessments.MarkingItem;
+import com.dissertation.backend.assessments.MarkingItemRepository;
 import com.dissertation.backend.assessments.exceptions.AssessmentNotFoundException;
+import com.dissertation.backend.assessments.exceptions.MarkingItemNotFoundException;
 import com.dissertation.backend.common.exceptions.InvalidRoleException;
 import com.dissertation.backend.course_modules.CourseModule;
 import com.dissertation.backend.enrolment.EnrolmentRepository;
+import com.dissertation.backend.feedback.dto.CreateFeedbackItemRequest;
 import com.dissertation.backend.feedback.dto.CreateFeedbackRequest;
+import com.dissertation.backend.feedback.dto.FeedbackItemResponse;
 import com.dissertation.backend.feedback.dto.FeedbackResponse;
-import com.dissertation.backend.feedback.exceptions.FeedbackExistsException;
-import com.dissertation.backend.feedback.exceptions.FeedbackNotFoundException;
-import com.dissertation.backend.feedback.exceptions.StudentNotEnrolledException;
-import com.dissertation.backend.feedback.exceptions.UnauthorisedLecturerException;
+import com.dissertation.backend.feedback.exceptions.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class FeedbackService {
@@ -28,27 +33,47 @@ public class FeedbackService {
     private final AssessmentRepository assessmentRepository;
     private final UserRepository userRepository;
     private final EnrolmentRepository enrolmentRepository;
-    public FeedbackService(FeedbackRepository feedbackRepository, AssessmentRepository assessmentRepository, UserRepository userRepository, EnrolmentRepository enrolmentRepository) {
+    private final MarkingItemRepository markingItemRepository;
+    public FeedbackService(FeedbackRepository feedbackRepository, AssessmentRepository assessmentRepository, UserRepository userRepository, EnrolmentRepository enrolmentRepository, MarkingItemRepository markingItemRepository) {
         this.feedbackRepository = feedbackRepository;
         this.assessmentRepository = assessmentRepository;
         this.userRepository = userRepository;
         this.enrolmentRepository = enrolmentRepository;
+        this.markingItemRepository = markingItemRepository;
     }
 
     private FeedbackResponse toResponse(Feedback feedback) {
+        AppUser lecturer = feedback.getLecturer();
+        Assessment assessment = feedback.getAssessment();
+
+        List<FeedbackItemResponse> itemResponses = feedback.getItems().stream()
+                .map(item -> new FeedbackItemResponse(
+                        item.getId(),
+                        feedback.getId(),
+                        item.getMarkingItem().getId(),
+                        item.getMarkingItem().getName(),
+                        item.getAwardedMark(),
+                        item.getMarkingItem().getMaxMark(),
+                        item.getComment()))
+                .toList();
+
+        Integer totalMark = feedback.getItems().stream()
+                .mapToInt(i -> i.getMarkingItem().getMaxMark())
+                .sum();
+
         return new FeedbackResponse(
                 feedback.getId(),
-                feedback.getAssessment().getTitle(),
-                feedback.getAssessment().getId(),
+                assessment.getTitle(),
+                assessment.getId(),
                 feedback.getStudent().getFullName(),
                 feedback.getStudent().getId(),
-                feedback.getLecturer().getId(),
-                feedback.getMark().intValue(),
-                feedback.getStrengths(),
-                feedback.getImprovements(),
-                feedback.getActions(),
-                feedback.getCreatedAt()
-        );
+                lecturer.getFullName(),
+                lecturer.getId(),
+                feedback.getMark(),
+                totalMark,
+                feedback.getSummary(),
+                feedback.getCreatedAt(),
+                itemResponses);
     }
 
     @Transactional(readOnly = true)
@@ -68,7 +93,7 @@ public class FeedbackService {
 
     @Transactional(readOnly = true)
     public FeedbackResponse getFeedbackById(Long feedbackId) {
-        return feedbackRepository.findById(feedbackId)
+        return feedbackRepository.findByIdWithDetails(feedbackId)
                 .map(this::toResponse)
                 .orElseThrow(() -> new FeedbackNotFoundException(feedbackId));
     }
@@ -88,6 +113,7 @@ public class FeedbackService {
     }
 
     // TODO: SECURITY
+    // TODO: N + 1 optimisation
     @Transactional
     public FeedbackResponse saveFeedback(CreateFeedbackRequest createFeedbackRequest, Long lecturerId) {
         AppUser student = userRepository.findAppUserById(createFeedbackRequest.studentId())
@@ -97,7 +123,7 @@ public class FeedbackService {
             throw new InvalidRoleException(student.getId(), UserRole.STUDENT);
         }
 
-        Assessment assessment = assessmentRepository.findAssessmentById(createFeedbackRequest.assessmentId())
+        Assessment assessment = assessmentRepository.findById(createFeedbackRequest.assessmentId())
                 .orElseThrow(() -> new AssessmentNotFoundException(createFeedbackRequest.assessmentId()));
 
         CourseModule module = assessment.getModule();
@@ -121,10 +147,41 @@ public class FeedbackService {
             throw new StudentNotEnrolledException(student.getId(), module.getId());
         }
 
-        Feedback feedback = new Feedback(student, lecturer, assessment, createFeedbackRequest.mark(), createFeedbackRequest.strengths(), createFeedbackRequest.improvements(), createFeedbackRequest.actions());
+        short totalAwarded = (short) createFeedbackRequest.items().stream()
+                .mapToInt(CreateFeedbackItemRequest::awardedMark)
+                .sum();
 
-        Feedback saved = feedbackRepository.save(feedback);
+        Feedback feedback = new Feedback(student, lecturer, assessment, totalAwarded, createFeedbackRequest.summary());
 
-        return toResponse(saved);
+        Set<Long> seen = new HashSet<>();
+
+        createFeedbackRequest.items()
+                .forEach((item) -> {
+                    if (!seen.add(item.markingItemId())) {
+                        throw new DuplicateMarkingItemException(item.markingItemId());
+                    }
+                    MarkingItem markingItem = markingItemRepository.findById(item.markingItemId())
+                            .orElseThrow(() -> new MarkingItemNotFoundException(item.markingItemId()));
+                    if (!markingItem.getAssessment().getId().equals(assessment.getId())) {
+                        throw new MarkingItemNotForAssessmentException(item.markingItemId(), assessment.getId());
+                    }
+                    if (item.awardedMark() > markingItem.getMaxMark()) {
+                        throw new InvalidMarkException(item.awardedMark(), markingItem.getMaxMark(), item.markingItemId());
+                    }
+                    feedback.addItem(new FeedbackItem(feedback, markingItem, item.awardedMark(), item.comment()));
+                });
+
+        Set<Long> assessmentItemIds = markingItemRepository.findByAssessmentIdOrderByPosition(assessment.getId()).stream()
+                .map(MarkingItem::getId).collect(Collectors.toSet());
+        Set<Long> submittedIds = createFeedbackRequest.items().stream()
+                .map(CreateFeedbackItemRequest::markingItemId).collect(Collectors.toSet());
+
+        if (!submittedIds.equals(assessmentItemIds)) {
+            throw new IncompleteFeedbackException("Submitted feedback does not cover all assessment items.");
+        }
+
+        Feedback savedFeedback = feedbackRepository.save(feedback);
+
+        return toResponse(savedFeedback);
     }
 }

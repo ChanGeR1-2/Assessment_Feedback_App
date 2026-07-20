@@ -20,7 +20,8 @@ export default defineConfig([
         rules: {
             indent: ["error", 4],
             "no-tabs": "error",
-            "no-mixed-spaces-and-tabs": "error"
+            "no-mixed-spaces-and-tabs": "error",
+            "react-hooks/set-state-in-effect": "off",
         }
     },
 ])

@@ -1,7 +1,6 @@
 package com.dissertation.backend.assessments;
 
-import com.dissertation.backend.assessments.dto.AssessmentResponse;
-import com.dissertation.backend.assessments.dto.CreateAssessmentRequest;
+import com.dissertation.backend.assessments.dto.*;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,5 +33,27 @@ public class AssessmentController {
     @PostMapping("/api/assessments")
     public ResponseEntity<AssessmentResponse> createAssessment(@Valid @RequestBody CreateAssessmentRequest request) {
         return new ResponseEntity<>(assessmentService.createAssessment(request), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/api/assessments/{id}/marking-items")
+    public ResponseEntity<MarkingItemResponse> createMarkingItem(@PathVariable Long id, @Valid @RequestBody CreateMarkingItemRequest request) {
+        return new ResponseEntity<>(assessmentService.createMarkingItem(id, request), HttpStatus.CREATED);
+    }
+
+    @PatchMapping("/api/assessments/{assessmentId}/marking-items/{id}")
+    public ResponseEntity<MarkingItemResponse> editMarkingItem(@PathVariable Long id, @PathVariable Long assessmentId, @Valid @RequestBody EditMarkingItemRequest request) {
+        return ResponseEntity.ok(assessmentService.editMarkingItem(assessmentId, id, request));
+    }
+
+    @DeleteMapping("/api/assessments/{assessmentId}/marking-items/{id}")
+    public ResponseEntity<Void> deleteMarkingItem(@PathVariable Long assessmentId, @PathVariable Long id) {
+        assessmentService.deleteMarkingItem(assessmentId, id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/api/assessments/{assessmentId}/marking-items/order")
+    public ResponseEntity<Void> reorderMarkingItems(@PathVariable Long assessmentId, @Valid @RequestBody MarkingItemReorderRequest request) {
+        assessmentService.reorderMarkingItems(assessmentId, request.orderedIds());
+        return ResponseEntity.noContent().build();
     }
 }

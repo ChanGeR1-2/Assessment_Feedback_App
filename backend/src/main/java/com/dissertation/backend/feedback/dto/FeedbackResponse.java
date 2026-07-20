@@ -1,6 +1,7 @@
 package com.dissertation.backend.feedback.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record FeedbackResponse(
         Long id,
@@ -8,11 +9,12 @@ public record FeedbackResponse(
         Long assessmentId,
         String studentFullName,
         Long studentId,
+        String lecturerFullName,
         Long lecturerId,
-        Integer mark,
-        String strengths,
-        String improvements,
-        String actions,
-        LocalDateTime createdAt
+        Short mark,
+        Integer totalMark,
+        String summary,
+        LocalDateTime createdAt,
+        List<FeedbackItemResponse> items
 ) {
 }

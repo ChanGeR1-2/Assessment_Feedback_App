@@ -4,6 +4,8 @@ import com.dissertation.backend.course_modules.CourseModule;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "assessment")
@@ -15,9 +17,14 @@ public class Assessment {
     private String title;
     @Column(name = "due_date")
     private LocalDateTime dueDate;
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "module_id",  nullable = false)
     private CourseModule module;
+    @OneToMany(mappedBy = "assessment", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("position ASC")
+    private List<MarkingItem> markingItems = new ArrayList<>();
+
+    public List<MarkingItem> getMarkingItems() { return markingItems; }
 
     protected Assessment() {}
 

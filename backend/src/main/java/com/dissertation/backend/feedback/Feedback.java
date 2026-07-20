@@ -5,6 +5,8 @@ import com.dissertation.backend.assessments.Assessment;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(
@@ -29,14 +31,12 @@ public class Feedback {
     private Assessment assessment;
     @Column(name = "mark", nullable = false)
     private Short mark;
-    @Column(name = "strengths", columnDefinition = "TEXT")
-    private String strengths;
-    @Column(name = "improvements", columnDefinition = "TEXT")
-    private String improvements;
-    @Column(name = "actions", columnDefinition = "TEXT")
-    private String actions;
+    @Column(name = "summary", columnDefinition = "TEXT")
+    private String summary;
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+    @OneToMany(mappedBy = "feedback", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FeedbackItem> items = new ArrayList<>();
 
     @PrePersist
     void onCreate() {
@@ -47,14 +47,16 @@ public class Feedback {
 
     protected Feedback() {}
 
-    public Feedback(AppUser student, AppUser lecturer, Assessment assessment, Short mark, String strengths, String improvements, String actions) {
+    public Feedback(AppUser student, AppUser lecturer, Assessment assessment, Short mark, String summary) {
         this.student = student;
         this.lecturer = lecturer;
         this.assessment = assessment;
         this.mark = mark;
-        this.strengths = strengths;
-        this.improvements = improvements;
-        this.actions = actions;
+        this.summary = summary;
+    }
+
+    public void addItem(FeedbackItem item) {
+        items.add(item);
     }
 
     public Long getId() {
@@ -93,31 +95,17 @@ public class Feedback {
         this.mark = mark;
     }
 
-    public String getStrengths() {
-        return strengths;
+    public String getSummary() {
+        return summary;
     }
 
-    public void setStrengths(String strengths) {
-        this.strengths = strengths;
-    }
-
-    public String getImprovements() {
-        return improvements;
-    }
-
-    public void setImprovements(String improvements) {
-        this.improvements = improvements;
-    }
-
-    public String getActions() {
-        return actions;
-    }
-
-    public void setActions(String actions) {
-        this.actions = actions;
+    public void setSummary(String summary) {
+        this.summary = summary;
     }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
+    public List<FeedbackItem> getItems() { return items; }
 }

@@ -57,11 +57,23 @@ const AssessmentsPage = () => {
                             {assessments.map((assessment) => (
                                 <Table.Tr
                                     key={assessment.id}
-                                    onClick={() => navigate(`/modules/${moduleId}/assessments/${assessment.id}/students`)}
-                                    style={{cursor: "pointer"}}
                                 >
                                     <Table.Td>{assessment.title}</Table.Td>
                                     <Table.Td>{new Date(assessment.dueDate).toLocaleDateString()}</Table.Td>
+                                    <Table.Td>
+                                        <Button
+                                            onClick={() => navigate(`/modules/${moduleId}/assessments/${assessment.id}`)}
+                                        >
+                                            Edit
+                                        </Button>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Button
+                                            onClick={() => navigate(`/modules/${moduleId}/assessments/${assessment.id}/students`)}
+                                        >
+                                            View
+                                        </Button>
+                                    </Table.Td>
                                 </Table.Tr>
                             ))}
                         </Table.Tbody>
