@@ -20,5 +20,12 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     List<Feedback> findByStudentId(Long studentId);
     List<Feedback> findByAssessmentId(Long assessmentId);
     boolean existsByAssessmentId(Long assessmentId);
-    Optional<Feedback> findByAssessmentIdAndStudentId(Long assessmentId, Long studentId);
+    @Query("SELECT DISTINCT f FROM Feedback f " +
+            "JOIN FETCH f.items i " +
+            "JOIN FETCH i.markingItem " +
+            "JOIN FETCH f.assessment " +
+            "JOIN FETCH f.lecturer " +
+            "JOIN FETCH f.student " +
+            "WHERE f.assessment.id = :assessmentId AND f.student.id = :studentId")
+    Optional<Feedback> findByAssessmentIdAndStudentId(@Param("assessmentId") Long assessmentId, @Param("studentId") Long studentId);
 }

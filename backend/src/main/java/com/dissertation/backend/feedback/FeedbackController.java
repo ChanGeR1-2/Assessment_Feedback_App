@@ -25,9 +25,11 @@ public class FeedbackController {
 
     // TODO: SECURITY
     @GetMapping("/api/assessments/{assessmentId}/students/{studentId}/feedback")
-    public ResponseEntity<FeedbackResponse> getFeedbackByAssessmentIdAndStudentId(
-            @PathVariable Long studentId, @PathVariable Long assessmentId) {
-        return ResponseEntity.ok(feedbackService.getFeedbackByAssessmentIdAndStudentId(studentId, assessmentId));
+    public ResponseEntity<FeedbackResponse> getFeedback(@PathVariable Long assessmentId,
+                                                        @PathVariable Long studentId) {
+        return feedbackService.getFeedbackByAssessmentIdAndStudentId(studentId, assessmentId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @GetMapping("/api/assessments/{assessmentId}/feedback")
@@ -36,9 +38,9 @@ public class FeedbackController {
     }
 
     // TODO: SECURITY
-    @GetMapping(path = "/api/feedback", params = {"studentId", "!assessmentId"})
+    @GetMapping(path = "/api/students/{studentId}/feedback")
     public ResponseEntity<List<FeedbackResponse>> getFeedbackByStudentId(
-            @RequestParam Long studentId) {
+            @PathVariable Long studentId) {
         return ResponseEntity.ok(feedbackService.getFeedbackByStudentId(studentId));
     }
 

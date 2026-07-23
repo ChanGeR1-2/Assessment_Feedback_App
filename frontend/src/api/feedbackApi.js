@@ -1,23 +1,26 @@
-import {handleResponse} from "./utils.js";
+import {apiFetch} from "./utils.js";
 
-export async function getStudentFeedback ({assessmentId, studentId}){
-    const response = await fetch(`/api/assessments/${assessmentId}/students/${studentId}/feedback`);
-    const data = await handleResponse(response);
-    return data.message ? null: data;
+export async function getFeedbackByStudentIdAndAssessmentId ({assessmentId, studentId}){
+    return await apiFetch(`/api/assessments/${assessmentId}/students/${studentId}/feedback`);
+}
+
+export async function getFeedbackById({feedbackId}){
+    return await apiFetch(`/api/feedback/${feedbackId}`);
+}
+
+export async function getFeedbackByStudentId ({studentId}){
+    return await apiFetch(`/api/students/${studentId}/feedback`);
 }
 
 export async function submitFeedback ({feedback, lecturerId}){
     const params = new URLSearchParams();
     params.append("lecturerId", lecturerId);
     const query = params.toString();
-    const response = await fetch(`/api/feedback${query ? `?${query}` : ""}`, {
+
+    return await apiFetch(`/api/feedback${query ? `?${query}` : ""}`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify( feedback ),
+        body: JSON.stringify( feedback )
     });
 
-    return handleResponse(response);
 }
 

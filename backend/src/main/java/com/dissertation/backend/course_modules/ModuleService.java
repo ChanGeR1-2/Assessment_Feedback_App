@@ -66,6 +66,6 @@ public class ModuleService {
     }
 
     private ModuleResponse toResponse(CourseModule module) {
-        return new ModuleResponse(module.getId(), module.getTitle(), module.getCode(), module.getAcademicYear(), module.getLecturer() != null ? module.getLecturer().getId() : null);
+        return new ModuleResponse(module.getId(), module.getTitle(), module.getCode(), module.getAcademicYear(), module.getLecturer().getId(), module.getLecturer().getFullName());
     }
 }

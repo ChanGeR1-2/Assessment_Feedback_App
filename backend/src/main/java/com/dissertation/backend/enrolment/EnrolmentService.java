@@ -6,6 +6,7 @@ import com.dissertation.backend.app_users.dto.UserResponse;
 import com.dissertation.backend.app_users.exceptions.UserNotFoundException;
 import com.dissertation.backend.course_modules.CourseModule;
 import com.dissertation.backend.course_modules.ModuleRepository;
+import com.dissertation.backend.course_modules.dto.ModuleResponse;
 import com.dissertation.backend.course_modules.exceptions.ModuleNotFoundException;
 import com.dissertation.backend.enrolment.dto.CreateEnrolmentRequest;
 import com.dissertation.backend.enrolment.dto.EnrolmentResponse;
@@ -54,6 +55,20 @@ public class EnrolmentService {
     @Transactional(readOnly = true)
     public List<UserResponse> getEnrolledStudents(Long lecturerId, Long moduleId) {
         return toStudentResponses(enrolmentRepository.findByLecturerId(lecturerId, moduleId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ModuleResponse> getEnrolledModules(Long studentId) {
+        return toModuleResponses(enrolmentRepository.findByStudentId(studentId));
+    }
+
+    private List<ModuleResponse> toModuleResponses(List<Enrolment> enrolments) {
+        return enrolments.stream()
+                .map(Enrolment::getModule)
+                .collect(Collectors.toMap(CourseModule::getId, m -> m, (a, b) -> a))
+                .values().stream()
+                .map(m -> new ModuleResponse(m.getId(), m.getTitle(), m.getCode(), m.getAcademicYear(), m.getLecturer().getId(), m.getLecturer().getFullName()))
+                .toList();
     }
 
 }

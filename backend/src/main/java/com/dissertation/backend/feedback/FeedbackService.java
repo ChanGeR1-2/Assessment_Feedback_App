@@ -21,10 +21,7 @@ import com.dissertation.backend.feedback.exceptions.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -99,10 +96,9 @@ public class FeedbackService {
     }
 
     @Transactional(readOnly = true)
-    public FeedbackResponse getFeedbackByAssessmentIdAndStudentId(Long studentId, Long assessmentId) {
+    public Optional<FeedbackResponse> getFeedbackByAssessmentIdAndStudentId(Long studentId, Long assessmentId) {
         return feedbackRepository.findByAssessmentIdAndStudentId(assessmentId, studentId)
-                .map(this::toResponse)
-                .orElseThrow(() -> new FeedbackNotFoundException(assessmentId, studentId));
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

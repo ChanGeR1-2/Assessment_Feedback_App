@@ -2,7 +2,7 @@ import "./Navbar.css";
 import { Stack, NavLink as MantineNavLink, Box } from "@mantine/core";
 import { NavLink as RouterNavLink } from "react-router";
 import { useEffect, useState } from "react";
-import { getModules } from "../../api/modulesApi.js";
+import { getLecturerModules } from "../../api/modulesApi.js";
 import { notifications } from "@mantine/notifications";
 
 const getCurrentUser = () => {
@@ -38,7 +38,7 @@ const Navbar = ({ onNavigate }) => {
         let cancelled = false;
         const loadModules = async () => {
             try {
-                const data = await getModules({ lecturerId: currentUser.id });
+                const data = await getLecturerModules({ lecturerId: currentUser.id });
                 if (!cancelled) setModules(data);
             } catch (error) {
                 if (!cancelled) {

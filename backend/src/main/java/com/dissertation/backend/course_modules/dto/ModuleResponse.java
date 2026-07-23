@@ -5,6 +5,7 @@ public record ModuleResponse(
         String title,
         String code,
         String academicYear,
-        Long lecturerId
+        Long lecturerId,
+        String lecturerName
 ) {
 }

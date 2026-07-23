@@ -1,11 +1,6 @@
-import { Badge, Card, Divider, Group, Paper, RingProgress, Stack, Text, Title } from "@mantine/core";
+import { Divider, Group, Paper, Progress, RingProgress, Stack, Text, Title } from "@mantine/core";
 
-const markColor = (mark) => {
-    if (mark >= 70) return "teal";
-    if (mark >= 50) return "blue";
-    if (mark >= 40) return "yellow";
-    return "red";
-};
+const markColor = (percentage) => (percentage >= 40 ? "teal" : "red");
 
 const StudentFeedbackSection = ({ feedback }) => {
     if (!feedback) return null;
@@ -18,7 +13,11 @@ const StudentFeedbackSection = ({ feedback }) => {
         })
         : null;
 
-    const color = markColor(feedback.mark);
+    const items = feedback.items ?? [];
+    const percentage = feedback.totalMark
+        ? Math.round((feedback.mark / feedback.totalMark) * 100)
+        : 0;
+    const color = markColor(percentage);
 
     return (
         <Stack gap="lg">
@@ -26,20 +25,23 @@ const StudentFeedbackSection = ({ feedback }) => {
                 <div>
                     <Title order={2}>Feedback</Title>
                     {formattedDate && (
-                        <Text size="sm" c="dimmed">
-                            Given on {formattedDate}
-                        </Text>
+                        <Text size="sm" c="dimmed">Given on {formattedDate}</Text>
                     )}
                 </div>
                 <RingProgress
-                    size={90}
-                    thickness={8}
+                    size={100}
+                    thickness={9}
                     roundCaps
-                    sections={[{ value: feedback.mark, color }]}
+                    sections={[{ value: percentage, color }]}
                     label={
-                        <Text ta="center" fw={700} size="lg">
-                            {feedback.mark}
-                        </Text>
+                        <Stack gap={0} align="center">
+                            <Text fw={700} size="lg" lh={1}>
+                                {feedback.mark}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                                / {feedback.totalMark}
+                            </Text>
+                        </Stack>
                     }
                 />
             </Group>
@@ -47,40 +49,62 @@ const StudentFeedbackSection = ({ feedback }) => {
             <Paper withBorder p="md" radius="md" bg="var(--mantine-color-gray-0)">
                 <Group gap="xl">
                     <div>
-                        <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-                            Student
+                        <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Student</Text>
+                        <Text fw={500}>
+                            {feedback.studentFullName ?? `#${feedback.studentId}`}
                         </Text>
-                        <Text fw={500}>{feedback.studentFullName ?? `#${feedback.studentId}`}</Text>
                     </div>
                     <div>
-                        <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-                            Assessment
+                        <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Assessment</Text>
+                        <Text fw={500}>
+                            {feedback.assessmentTitle ?? `#${feedback.assessmentId}`}
                         </Text>
-                        <Text fw={500}>{feedback.assessmentTitle ?? `#${feedback.assessmentId}`}</Text>
+                    </div>
+                    <div>
+                        <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Marked by</Text>
+                        <Text fw={500}>{feedback.lecturerFullName ?? "—"}</Text>
                     </div>
                 </Group>
             </Paper>
 
+            {feedback.summary && (
+                <Paper withBorder p="md" radius="md">
+                    <Text fw={600} mb={4}>Overall summary</Text>
+                    <Text style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+                        {feedback.summary}
+                    </Text>
+                </Paper>
+            )}
+
+
             <Stack gap="md">
-                <FeedbackField label="Strengths" value={feedback.strengths} />
-                <Divider />
-                <FeedbackField label="Areas for improvement" value={feedback.improvements} />
-                <Divider />
-                <FeedbackField label="Recommended actions" value={feedback.actions} />
+                {items.map((item, index) => (
+                    <div key={item.id}>
+                        {index > 0 && <Divider mb="md" />}
+                        <Group justify="space-between" mb={6} wrap="nowrap">
+                            <Text fw={600}>{item.markingItemName}</Text>
+                            <Text fw={600} size="sm" style={{ whiteSpace: "nowrap" }}>
+                                {item.awardedMark} / {item.maxMark}
+                            </Text>
+                        </Group>
+                        <Progress
+                            value={(item.awardedMark / item.maxMark) * 100}
+                            size="sm"
+                            radius="xl"
+                            mb="xs"
+                            color={markColor((item.awardedMark / item.maxMark) * 100)}
+                        />
+                        <Text
+                            c={item.comment ? undefined : "dimmed"}
+                            style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}
+                        >
+                            {item.comment || "No comment"}
+                        </Text>
+                    </div>
+                ))}
             </Stack>
         </Stack>
     );
 };
-
-const FeedbackField = ({ label, value }) => (
-    <div>
-        <Text fw={600} mb={4} c="dark">
-            {label}
-        </Text>
-        <Text c={value ? undefined : "dimmed"} style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
-            {value || "None provided"}
-        </Text>
-    </div>
-);
 
 export default StudentFeedbackSection;

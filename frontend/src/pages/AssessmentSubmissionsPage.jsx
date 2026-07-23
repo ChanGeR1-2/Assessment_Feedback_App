@@ -27,13 +27,14 @@ const AssessmentSubmissionsPage = () => {
                 setAssessment(assessmentData);
                 const moduleData = await getModuleById({moduleId});
                 setModule(moduleData);
-                setLoading(false);
             } catch(error) {
                 notifications.show({
                     title: "Error",
                     message: error.message,
                     color: "red"
                 })
+            } finally {
+                setLoading(false);
             }
         }
         loadData();

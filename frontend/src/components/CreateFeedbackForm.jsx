@@ -4,35 +4,46 @@ import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { submitFeedback } from "../api/feedbackApi.js";
 
-const CreateFeedbackForm = ({ assessmentId, studentId, lecturerId, onSubmit, studentFullName, assessmentTitle }) => {
+const CreateFeedbackForm = ({ assessmentId, studentId, lecturerId, onSubmit, studentFullName, assessmentTitle, markingItems }) => {
     const [submitting, setSubmitting] = useState(false);
 
     const form = useForm({
-        initialValues: { mark: 0, strengths: "", improvements: "", actions: "" },
+        initialValues: {
+            summary: "",
+            items: markingItems.map((mi) => ({
+                markingItemId: mi.id,
+                awardedMark: 0,
+                comment: "",
+            })),
+        },
         validate: {
-            strengths: (v) => (v.trim().length > 2 ? null : "Strengths must be at least 3 characters"),
-            improvements: (v) => (v.trim().length > 2 ? null : "Improvements must be at least 3 characters"),
-            actions: (v) => (v.trim().length > 2 ? null : "Actions must be at least 3 characters"),
-            mark: (v) => (v >= 0 && v <= 100 ? null : "Mark must be between 0 and 100"),
+            items: {
+                awardedMark: (value, values, path) => {
+                    const index = Number(path.split(".")[1]);
+                    const max = markingItems[index].maxMark;
+                    if (value == null) return "Mark is required";
+                    if (value < 0 || value > max) return `Must be between 0 and ${max}`;
+                    return null;
+                },
+            },
         },
     });
+
+    const total = form.values.items.reduce((sum, i) => sum + (i.awardedMark || 0), 0);
+    const maxTotal = markingItems.reduce((sum, mi) => sum + mi.maxMark, 0);
 
     const handleSubmit = async (values) => {
         setSubmitting(true);
         try {
             const savedFeedback = await submitFeedback({
                 feedback: {
+                    ...values,
                     assessmentId,
-                    studentId,
-                    mark: Number(values.mark),
-                    strengths: values.strengths,
-                    improvements: values.improvements,
-                    actions: values.actions,
+                    studentId
                 },
                 lecturerId,
             });
             onSubmit(savedFeedback);
-            form.reset();
         } catch (e) {
             notifications.show({ title: "Feedback creation failed", message: e.message, color: "red" });
         } finally {
@@ -50,52 +61,42 @@ const CreateFeedbackForm = ({ assessmentId, studentId, lecturerId, onSubmit, stu
             </Stack>
 
             <form onSubmit={form.onSubmit(handleSubmit)}>
-                <Stack gap="md">
-                    <NumberInput
-                        label="Mark"
-                        description="Out of 100"
-                        placeholder="0–100"
-                        min={0}
-                        max={100}
-                        clampBehavior="strict"
-                        allowDecimal={false}
-                        w={160}
-                        required
-                        key={form.key("mark")}
-                        {...form.getInputProps("mark")}
-                    />
-                    <Textarea
-                        label="Strengths"
-                        placeholder="What did the student do well?"
-                        autosize
-                        minRows={3}
-                        required
-                        key={form.key("strengths")}
-                        {...form.getInputProps("strengths")}
-                    />
-                    <Textarea
-                        label="Areas for improvement"
-                        placeholder="What could be improved?"
-                        autosize
-                        minRows={3}
-                        required
-                        key={form.key("improvements")}
-                        {...form.getInputProps("improvements")}
-                    />
-                    <Textarea
-                        label="Recommended actions"
-                        placeholder="What should the student do next?"
-                        autosize
-                        minRows={3}
-                        required
-                        key={form.key("actions")}
-                        {...form.getInputProps("actions")}
-                    />
-                    <Group justify="flex-end" mt="sm">
-                        <Button type="submit" loading={submitting}>
-                            Save feedback
-                        </Button>
+                <Stack gap="lg">
+                    {markingItems.map((markingItem, index) => (
+                        <Paper key={markingItem.id} withBorder p="md" radius="md">
+                            <Group justify="space-between" mb="sm">
+                                <Text fw={600}>{markingItem.name}</Text>
+                                <NumberInput
+                                    w={120}
+                                    min={0}
+                                    max={markingItem.maxMark}
+                                    clampBehavior="strict"
+                                    allowDecimal={false}
+                                    suffix={` / ${markingItem.maxMark}`}
+                                    {...form.getInputProps(`items.${index}.awardedMark`)}
+                                />
+                            </Group>
+                            <Textarea
+                                placeholder="Comments on this criterion"
+                                autosize
+                                minRows={2}
+                                {...form.getInputProps(`items.${index}.comment`)}
+                            />
+                        </Paper>
+                    ))}
+
+                    <Group justify="flex-end">
+                        <Text fw={700}>Total: {total} / {maxTotal}</Text>
                     </Group>
+
+                    <Textarea
+                        label="Overall summary"
+                        autosize
+                        minRows={3}
+                        {...form.getInputProps("summary")}
+                    />
+
+                    <Button type="submit" loading={submitting}>Save feedback</Button>
                 </Stack>
             </form>
         </Paper>

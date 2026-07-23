@@ -1,4 +1,4 @@
-import {handleResponse} from "./utils.js";
+import {apiFetch} from "./utils.js";
 
 export async function getUsers({role} = {}) {
     const params = new URLSearchParams();
@@ -6,13 +6,11 @@ export async function getUsers({role} = {}) {
         params.append("role", role);
     }
     const query = params.toString()
-    const response = await fetch(`/api/users${query ? `?${query}` : ""}`);
-    return handleResponse(response);
+    return await apiFetch(`/api/users${query ? `?${query}` : ""}`);
 }
 
 export async function getUserById({userId}) {
-    const response = await fetch(`/api/users/${userId}`);
-    return handleResponse(response);
+    return apiFetch(`/api/users/${userId}`)
 }
 
 export async function getStudents({moduleId, lecturerId}) {
@@ -21,12 +19,8 @@ export async function getStudents({moduleId, lecturerId}) {
     params.append("lecturerId", lecturerId);
     const query = params.toString();
 
-
-    const enrolmentResponse = await fetch(`/api/enrolments${query ? `?${query}` : ""}`);
-    const students =  await handleResponse(enrolmentResponse);
-
-    const feedbackResponse = await fetch(`/api/assessments/${moduleId}/feedback`);
-    const feedback =  await handleResponse(feedbackResponse);
+    const students =  await apiFetch(`/api/enrolments${query ? `?${query}` : ""}`);
+    const feedback =  await apiFetch(`/api/assessments/${moduleId}/feedback`);
 
     students.map(student => {
         student.feedback = feedback.find(f => f.studentId === student.id);
@@ -37,13 +31,9 @@ export async function getStudents({moduleId, lecturerId}) {
 }
 
 export async function createUser(userData) {
-    const response = await fetch(`/api/users`, {
+    return await apiFetch(`/api/users`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
         body: JSON.stringify( userData ),
     });
 
-    return handleResponse(response);
 }

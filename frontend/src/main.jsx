@@ -17,8 +17,10 @@ import ProtectedRoute from "./pages/auth/ProtectedRoute.jsx";
 import LecturerDashboard from "./pages/LecturerDashboard.jsx";
 import AssessmentsPage from "./pages/AssessmentsPage.jsx";
 import AssessmentSubmissionsPage from "./pages/AssessmentSubmissionsPage.jsx";
-import StudentFeedbackPage from "./pages/StudentFeedbackPage.jsx";
+import LecturerFeedbackPage from "./pages/LecturerFeedbackPage.jsx";
 import AssessmentDetailsPage from "./pages/AssessmentDetailsPage.jsx";
+import StudentDashboard from "./pages/StudentDashboard.jsx";
+import StudentFeedbackPage from "./pages/StudentFeedbackPage.jsx";
 
 const router = createBrowserRouter([
     {
@@ -67,6 +69,19 @@ const router = createBrowserRouter([
                     },
                     {
                         path: "modules/:moduleId/assessments/:assessmentId/students/:studentId/feedback",
+                        element: <LecturerFeedbackPage />
+                    }
+                ]
+            },
+            {
+                element: <ProtectedRoute allowedRoles={["STUDENT"]} />,
+                children: [
+                    {
+                        path: "student-dashboard",
+                        element: <StudentDashboard />
+                    },
+                    {
+                        path: "feedback/:id",
                         element: <StudentFeedbackPage />
                     }
                 ]

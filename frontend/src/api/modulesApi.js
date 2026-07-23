@@ -1,16 +1,16 @@
-import {handleResponse} from "./utils.js";
+import {apiFetch} from "./utils.js";
 
-export async function getModules({lecturerId} = {}) {
+export async function getLecturerModules({lecturerId} = {}) {
     const params = new URLSearchParams();
     if (lecturerId) {
         params.append("lecturerId", lecturerId);
     }
     const query = params.toString()
-    const response = await fetch(`/api/modules${query ? `?${query}` : ""}`);
-    return handleResponse(response);
+    return await apiFetch(`/api/modules${query ? `?${query}` : ""}`)
 }
 
 export async function getModuleById({moduleId}) {
-    const response = await fetch(`/api/modules/${moduleId}`);
-    return handleResponse(response);
+    return await apiFetch(`/api/modules/${moduleId}`);
 }
+
+export async function getStudentModules({studentId}) { return await apiFetch(`/api/students/${studentId}/modules`); }
