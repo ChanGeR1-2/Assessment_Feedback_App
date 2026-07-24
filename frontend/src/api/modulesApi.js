@@ -1,12 +1,7 @@
 import {apiFetch} from "./utils.js";
 
-export async function getLecturerModules({lecturerId} = {}) {
-    const params = new URLSearchParams();
-    if (lecturerId) {
-        params.append("lecturerId", lecturerId);
-    }
-    const query = params.toString()
-    return await apiFetch(`/api/modules${query ? `?${query}` : ""}`)
+export async function getLecturerModules() {
+    return await apiFetch(`/api/modules`)
 }
 
 export async function getModuleById({moduleId}) {

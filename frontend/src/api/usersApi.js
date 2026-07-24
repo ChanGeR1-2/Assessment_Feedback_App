@@ -13,10 +13,9 @@ export async function getUserById({userId}) {
     return apiFetch(`/api/users/${userId}`)
 }
 
-export async function getStudents({moduleId, lecturerId}) {
+export async function getStudents({moduleId}) {
     const params = new URLSearchParams();
     params.append("moduleId", moduleId);
-    params.append("lecturerId", lecturerId);
     const query = params.toString();
 
     const students =  await apiFetch(`/api/enrolments${query ? `?${query}` : ""}`);

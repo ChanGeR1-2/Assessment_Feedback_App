@@ -39,8 +39,8 @@ const LoginPage = () => {
         setSubmitting(true);
 
         try {
-            const user = await loginUser(values);
-
+            const { token, ...user } = await loginUser(values);
+            localStorage.setItem("token", token);
             localStorage.setItem("currentUser", JSON.stringify(user));
 
             notifications.show({

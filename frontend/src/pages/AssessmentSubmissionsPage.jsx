@@ -20,7 +20,7 @@ const AssessmentSubmissionsPage = () => {
         const loadData = async () => {
             setLoading(true);
             try {
-                const studentsData = await getStudents({moduleId, lecturerId: currentUser.id});
+                const studentsData = await getStudents({moduleId});
                 setStudents(studentsData);
                 console.log(studentsData);
                 const assessmentData = await getAssessmentById({assessmentId});

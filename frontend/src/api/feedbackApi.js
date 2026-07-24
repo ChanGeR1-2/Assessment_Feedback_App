@@ -12,12 +12,8 @@ export async function getFeedbackByStudentId ({studentId}){
     return await apiFetch(`/api/students/${studentId}/feedback`);
 }
 
-export async function submitFeedback ({feedback, lecturerId}){
-    const params = new URLSearchParams();
-    params.append("lecturerId", lecturerId);
-    const query = params.toString();
-
-    return await apiFetch(`/api/feedback${query ? `?${query}` : ""}`, {
+export async function submitFeedback ({feedback}){
+    return await apiFetch(`/api/feedback`, {
         method: "POST",
         body: JSON.stringify( feedback )
     });

@@ -41,7 +41,6 @@ const CreateFeedbackForm = ({ assessmentId, studentId, lecturerId, onSubmit, stu
                     assessmentId,
                     studentId
                 },
-                lecturerId,
             });
             onSubmit(savedFeedback);
         } catch (e) {

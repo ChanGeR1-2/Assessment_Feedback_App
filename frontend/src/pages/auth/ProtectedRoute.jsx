@@ -3,15 +3,12 @@ import { getCurrentUser } from "./currentUser.js";
 
 const ProtectedRoute = ({ allowedRoles }) => {
     const currentUser = getCurrentUser();
+    const token = localStorage.getItem("token");
 
-    if (!currentUser) {
-        return <Navigate to="/login" replace />;
-    }
-
+    if (!currentUser || !token) return <Navigate to="/login" replace />;
     if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
-        return <Navigate to="/unauthorised" replace />;
+        return <Navigate to="/" replace />;
     }
-
     return <Outlet />;
 };
 

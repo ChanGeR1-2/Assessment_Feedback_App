@@ -4,14 +4,8 @@ import { NavLink as RouterNavLink } from "react-router";
 import { useEffect, useState } from "react";
 import { getLecturerModules } from "../../api/modulesApi.js";
 import { notifications } from "@mantine/notifications";
+import {getCurrentUser} from "../../pages/auth/currentUser.js";
 
-const getCurrentUser = () => {
-    try {
-        return JSON.parse(localStorage.getItem("currentUser"));
-    } catch {
-        return null;
-    }
-};
 
 const Navbar = ({ onNavigate }) => {
     const currentUser = getCurrentUser();
@@ -38,7 +32,7 @@ const Navbar = ({ onNavigate }) => {
         let cancelled = false;
         const loadModules = async () => {
             try {
-                const data = await getLecturerModules({ lecturerId: currentUser.id });
+                const data = await getLecturerModules();
                 if (!cancelled) setModules(data);
             } catch (error) {
                 if (!cancelled) {

@@ -28,6 +28,8 @@ services:
       SPRING_DATASOURCE_USERNAME: assessment_user
       SPRING_DATASOURCE_PASSWORD: assessment_password
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-dev-only-secret-change-me-at-least-32-bytes-long}
+      APP_JWT_EXPIRATION_MS: 86400000
     ports:
       - "8080:8080"
     volumes:

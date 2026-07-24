@@ -5,7 +5,9 @@ import com.dissertation.backend.app_users.exceptions.UserNotFoundException;
 import com.dissertation.backend.assessments.exceptions.AssessmentNotFoundException;
 import com.dissertation.backend.assessments.exceptions.InvalidModuleException;
 import com.dissertation.backend.assessments.exceptions.MarkingItemNotFoundException;
+import com.dissertation.backend.assessments.exceptions.RubricLockedException;
 import com.dissertation.backend.auth.exceptions.InvalidPasswordException;
+import com.dissertation.backend.common.exceptions.ForbiddenException;
 import com.dissertation.backend.common.exceptions.InvalidRoleException;
 import com.dissertation.backend.course_modules.exceptions.ModuleExistsException;
 import com.dissertation.backend.course_modules.exceptions.ModuleNotFoundException;
@@ -33,21 +35,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    // --- Auth ---
+    // --- Auth (401) ---
 
     @ExceptionHandler(InvalidPasswordException.class)
     public ResponseEntity<Map<String, String>> handleInvalidPassword(InvalidPasswordException ex) {
         return messageResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
-    // --- Forbidden ---
+    // --- Forbidden (403) ---
 
-    @ExceptionHandler(UnauthorisedLecturerException.class)
-    public ResponseEntity<Map<String, String>> handleUnauthorisedLecturer(UnauthorisedLecturerException ex) {
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Map<String, String>> handleForbidden(ForbiddenException ex) {
         return messageResponse(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
-    // --- Not found ---
+    // --- Not found (404) ---
 
     @ExceptionHandler(ModuleNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleModuleNotFound(ModuleNotFoundException ex) {
@@ -74,7 +76,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return messageResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    // --- Conflicts ---
+    // --- Conflicts (409) ---
 
     @ExceptionHandler(EmailExistsException.class)
     public ResponseEntity<Map<String, String>> handleEmailExists(EmailExistsException ex) {
@@ -96,13 +98,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return messageResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(RubricLockedException.class)
+    public ResponseEntity<Map<String, String>> handleRubricLocked(RubricLockedException ex) {
+        return messageResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> handleDataIntegrity(DataIntegrityViolationException ex) {
         log.warn("Data integrity violation", ex);
         return messageResponse(HttpStatus.CONFLICT, "The operation conflicts with existing data");
     }
 
-    // --- Bad requests ---
+    // --- Bad requests (400) ---
 
     @ExceptionHandler(InvalidModuleException.class)
     public ResponseEntity<Map<String, String>> handleInvalidModule(InvalidModuleException ex) {
@@ -119,15 +126,33 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
-        return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
     @ExceptionHandler(DuplicateMarkingItemException.class)
     public ResponseEntity<Map<String, String>> handleDuplicateMarkingItem(DuplicateMarkingItemException ex) {
         return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
+
+    @ExceptionHandler(InvalidMarkException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidMark(InvalidMarkException ex) {
+        return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(MarkingItemNotForAssessmentException.class)
+    public ResponseEntity<Map<String, String>> handleMarkingItemNotForAssessment(
+            MarkingItemNotForAssessmentException ex) {
+        return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(IncompleteFeedbackException.class)
+    public ResponseEntity<Map<String, String>> handleIncompleteFeedback(IncompleteFeedbackException ex) {
+        return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
+        return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    // --- Bean validation (@Valid) ---
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
@@ -150,7 +175,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
-    // --- Catch-all: log the real cause, return a generic message ---
+    // --- Catch-all (500): log the real cause, return a generic message ---
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception ex) {
