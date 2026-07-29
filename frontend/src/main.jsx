@@ -21,6 +21,9 @@ import LecturerFeedbackPage from "./pages/LecturerFeedbackPage.jsx";
 import AssessmentDetailsPage from "./pages/AssessmentDetailsPage.jsx";
 import StudentDashboard from "./pages/StudentDashboard.jsx";
 import StudentFeedbackPage from "./pages/StudentFeedbackPage.jsx";
+import LecturerQueriesPage from "./pages/LecturerQueriesPage.jsx";
+import StudentModuleFeedbackPage from "./pages/StudentModuleFeedbackPage.jsx";
+import StudentModulesPage from "./pages/StudentModulesPage.jsx";
 
 const router = createBrowserRouter([
     {
@@ -70,7 +73,10 @@ const router = createBrowserRouter([
                     {
                         path: "modules/:moduleId/assessments/:assessmentId/students/:studentId/feedback",
                         element: <LecturerFeedbackPage />
-                    }
+                    },
+                    {
+                        path: "queries",
+                        element: <LecturerQueriesPage /> }
                 ]
             },
             {
@@ -83,7 +89,13 @@ const router = createBrowserRouter([
                     {
                         path: "feedback/:id",
                         element: <StudentFeedbackPage />
-                    }
+                    },
+                    {
+                        path: "my-modules",
+                        element: <StudentModulesPage /> },
+                    {
+                        path: "my-modules/:moduleId/feedback",
+                        element: <StudentModuleFeedbackPage /> },
                 ]
             }
         ]

@@ -1,15 +1,42 @@
-import { Divider, Group, Paper, Progress, RingProgress, Stack, Text, Title } from "@mantine/core";
+import { Button, Divider, Group, Modal, Paper, Progress, RingProgress, Stack, Text, Title } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { useEffect, useState } from "react";
+import { getCurrentUser } from "../pages/auth/currentUser.js";
+import { getFeedbackQueryByFeedbackId } from "../api/feedbackApi.js";
+import CreateFeedbackQueryForm from "./CreateFeedbackQueryForm.jsx";
 
 const markColor = (percentage) => (percentage >= 40 ? "teal" : "red");
 
 const StudentFeedbackSection = ({ feedback }) => {
+    const currentUser = getCurrentUser();
+    const [query, setQuery] = useState(null);
+    const [opened, { open, close }] = useDisclosure(false);
+    const [answerOpened, { open: openAnswer, close: closeAnswer }] = useDisclosure(false);
+
+    const isOwningStudent =
+        currentUser?.role === "STUDENT" && currentUser?.id === feedback?.studentId;
+
+    useEffect(() => {
+        if (!feedback?.id) return;
+        let cancelled = false;
+        getFeedbackQueryByFeedbackId({ feedbackId: feedback.id })
+            .then((data) => {
+                if (!cancelled) setQuery(data);
+            })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [feedback?.id]);
+
     if (!feedback) return null;
+
+    const handleQueryCreated = (created) => {
+        setQuery(created);
+        close();
+    };
 
     const formattedDate = feedback.createdAt
         ? new Date(feedback.createdAt).toLocaleDateString(undefined, {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
+            year: "numeric", month: "long", day: "numeric",
         })
         : null;
 
@@ -24,9 +51,7 @@ const StudentFeedbackSection = ({ feedback }) => {
             <Group justify="space-between" align="flex-start" wrap="nowrap">
                 <div>
                     <Title order={2}>Feedback</Title>
-                    {formattedDate && (
-                        <Text size="sm" c="dimmed">Given on {formattedDate}</Text>
-                    )}
+                    {formattedDate && <Text size="sm" c="dimmed">Given on {formattedDate}</Text>}
                 </div>
                 <RingProgress
                     size={100}
@@ -35,12 +60,8 @@ const StudentFeedbackSection = ({ feedback }) => {
                     sections={[{ value: percentage, color }]}
                     label={
                         <Stack gap={0} align="center">
-                            <Text fw={700} size="lg" lh={1}>
-                                {feedback.mark}
-                            </Text>
-                            <Text size="xs" c="dimmed">
-                                / {feedback.totalMark}
-                            </Text>
+                            <Text fw={700} size="lg" lh={1}>{feedback.mark}</Text>
+                            <Text size="xs" c="dimmed">/ {feedback.totalMark}</Text>
                         </Stack>
                     }
                 />
@@ -50,15 +71,11 @@ const StudentFeedbackSection = ({ feedback }) => {
                 <Group gap="xl">
                     <div>
                         <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Student</Text>
-                        <Text fw={500}>
-                            {feedback.studentFullName ?? `#${feedback.studentId}`}
-                        </Text>
+                        <Text fw={500}>{feedback.studentFullName ?? `#${feedback.studentId}`}</Text>
                     </div>
                     <div>
                         <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Assessment</Text>
-                        <Text fw={500}>
-                            {feedback.assessmentTitle ?? `#${feedback.assessmentId}`}
-                        </Text>
+                        <Text fw={500}>{feedback.assessmentTitle ?? `#${feedback.assessmentId}`}</Text>
                     </div>
                     <div>
                         <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Marked by</Text>
@@ -70,12 +87,9 @@ const StudentFeedbackSection = ({ feedback }) => {
             {feedback.summary && (
                 <Paper withBorder p="md" radius="md">
                     <Text fw={600} mb={4}>Overall summary</Text>
-                    <Text style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
-                        {feedback.summary}
-                    </Text>
+                    <Text style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{feedback.summary}</Text>
                 </Paper>
             )}
-
 
             <Stack gap="md">
                 {items.map((item, index) => (
@@ -103,6 +117,58 @@ const StudentFeedbackSection = ({ feedback }) => {
                     </div>
                 ))}
             </Stack>
+
+            {isOwningStudent && (
+                <>
+                    <Divider />
+                    {!query ? (
+                        <Group justify="space-between">
+                            <Text size="sm" c="dimmed">
+                                Have a question about this feedback?
+                            </Text>
+                            <Button variant="light" onClick={open}>Ask a question</Button>
+                        </Group>
+                    ) : query.answer ? (
+                        <Group justify="space-between">
+                            <Text size="sm" c="dimmed">Your lecturer has responded.</Text>
+                            <Button variant="light" onClick={openAnswer}>View answer</Button>
+                        </Group>
+                    ) : (
+                        <Group justify="space-between">
+                            <Text size="sm" c="dimmed">Your question is awaiting a answer.</Text>
+                            <Button variant="light" disabled>Awaiting answer</Button>
+                        </Group>
+                    )}
+                </>
+            )}
+
+            <Modal opened={opened} onClose={close} title="Ask a question" centered>
+                <CreateFeedbackQueryForm
+                    key={feedback.id}
+                    feedbackId={feedback.id}
+                    onSuccess={handleQueryCreated}
+                />
+            </Modal>
+
+            <Modal opened={answerOpened} onClose={closeAnswer} title="Question and answer" centered>
+                {query && (
+                    <Stack gap="md">
+                        <div>
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Your question</Text>
+                            <Text style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{query.query}</Text>
+                        </div>
+                        <Divider />
+                        <div>
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+                                Answer from {query.answer?.lecturerFullName ?? "your lecturer"}
+                            </Text>
+                            <Text style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+                                {query.answer?.answer}
+                            </Text>
+                        </div>
+                    </Stack>
+                )}
+            </Modal>
         </Stack>
     );
 };

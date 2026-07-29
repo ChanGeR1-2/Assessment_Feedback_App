@@ -72,7 +72,11 @@ public class FeedbackService {
                 totalMark,
                 feedback.getSummary(),
                 feedback.getCreatedAt(),
-                itemResponses);
+                itemResponses,
+                feedback.getAssessment().getModule().getId(),
+                feedback.getAssessment().getModule().getTitle(),
+                feedback.getAssessment().getModule().getAcademicYear()
+        );
     }
 
     @Transactional(readOnly = true)

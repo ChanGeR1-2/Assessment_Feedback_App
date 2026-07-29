@@ -15,6 +15,9 @@ public record FeedbackResponse(
         Integer totalMark,
         String summary,
         LocalDateTime createdAt,
-        List<FeedbackItemResponse> items
+        List<FeedbackItemResponse> items,
+        Long moduleId,
+        String moduleTitle,
+        String academicYear
 ) {
 }

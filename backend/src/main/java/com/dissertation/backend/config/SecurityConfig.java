@@ -52,7 +52,6 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.GET, "/api/assessments/*/feedback").hasRole("LECTURER")
                         .requestMatchers(HttpMethod.GET, "/api/assessments/*/students/*/feedback").hasRole("LECTURER")
-                        .requestMatchers(HttpMethod.POST, "/api/feedback/**").hasRole("LECTURER")
 
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
