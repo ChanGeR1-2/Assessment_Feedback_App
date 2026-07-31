@@ -1,22 +1,47 @@
-import { Button, Group, NumberInput, Paper, Stack, Text, Textarea, Title } from "@mantine/core";
-import { useState } from "react";
-import { useForm } from "@mantine/form";
-import { notifications } from "@mantine/notifications";
-import { submitFeedback } from "../api/feedbackApi.js";
+import {Anchor, Breadcrumbs, Button, Group, NumberInput, Paper, Stack, Text, Textarea, Title} from "@mantine/core";
+import {useEffect, useMemo, useState} from "react";
+import {useForm} from "@mantine/form";
+import {notifications} from "@mantine/notifications";
+import {submitFeedback, updateFeedback} from "../api/feedbackApi.js";
+import {Link} from "react-router";
+import {useAudioRecorder} from "../utils/audio.js";
+import AudioPlayer from "./AudioPlayer.jsx";
 
-const CreateFeedbackForm = ({ assessmentId, studentId, lecturerId, onSubmit, studentFullName, assessmentTitle, markingItems }) => {
+const CreateFeedbackForm = ({
+    assessmentId,
+    studentId,
+    onSubmit,
+    studentFullName,
+    assessmentTitle,
+    markingItems,
+    feedback,
+    moduleId,
+    moduleTitle,
+}) => {
     const [submitting, setSubmitting] = useState(false);
+    const isEditing = Boolean(feedback);
+    const { recording, audioBlob, error, start, stop, reset } = useAudioRecorder();
+    const previewUrl = useMemo(
+        () => (audioBlob ? URL.createObjectURL(audioBlob) : null),
+        [audioBlob]
+    );
+    const [audioVersion, setAudioVersion] = useState(0);
+    useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
     const form = useForm({
         initialValues: {
-            summary: "",
-            items: markingItems.map((mi) => ({
-                markingItemId: mi.id,
-                awardedMark: 0,
-                comment: "",
-            })),
+            summary: feedback?.summary ?? "",
+            items: markingItems.map((mi) => {
+                const feedbackItem = feedback?.items?.find(i => i.markingItemId === mi.id);
+                return {
+                    markingItemId: mi.id,
+                    awardedMark: feedbackItem?.awardedMark ?? 0,
+                    comment: feedbackItem?.comment ?? ""
+                }
+            }),
         },
         validate: {
+            summary: (value) => (value.trim().length >= 10 ? null : "Summary must be at least 10 characters"),
             items: {
                 awardedMark: (value, values, path) => {
                     const index = Number(path.split(".")[1]);
@@ -32,34 +57,82 @@ const CreateFeedbackForm = ({ assessmentId, studentId, lecturerId, onSubmit, stu
     const total = form.values.items.reduce((sum, i) => sum + (i.awardedMark || 0), 0);
     const maxTotal = markingItems.reduce((sum, mi) => sum + mi.maxMark, 0);
 
-    const handleSubmit = async (values) => {
+    const handleSubmit = async (values, publish) => {
         setSubmitting(true);
         try {
-            const savedFeedback = await submitFeedback({
-                feedback: {
-                    ...values,
-                    assessmentId,
-                    studentId
-                },
-            });
+            const savedFeedback = isEditing
+                ? await updateFeedback({
+                    feedbackId: feedback.id,
+                    feedback: {
+                        ...values,
+                        assessmentId,
+                        studentId
+                    },
+                    publish
+                })
+                : await submitFeedback({
+                    feedback: {
+                        ...values,
+                        assessmentId,
+                        studentId
+                    },
+                    publish
+                });
+            savedFeedback.status = publish ? "PUBLISHED" : "DRAFT";
+
+            if (audioBlob) {
+                try {
+                    const formData = new FormData();
+                    formData.append("file", audioBlob, "feedback.webm");
+                    const res = await fetch(`/api/feedback/${savedFeedback.id}/audio`, {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                        body: formData,
+                    });
+                    if (!res.ok) throw new Error("Audio upload failed");
+                    reset();
+                    setAudioVersion((v) => v + 1);
+                } catch {
+                    notifications.show({
+                        title: "Feedback saved, audio didn't upload",
+                        message: "The written feedback was saved. You can add the recording later.",
+                        color: "yellow",
+                    });
+                    onSubmit(savedFeedback);
+                    return;
+                }
+            }
             onSubmit(savedFeedback);
         } catch (e) {
-            notifications.show({ title: "Feedback creation failed", message: e.message, color: "red" });
+            if (e.fieldErrors) {
+                form.setErrors(e.fieldErrors);
+                return;
+            }
+            notifications.show({title: "Feedback creation failed", message: e.message, color: "red"});
         } finally {
             setSubmitting(false);
         }
     };
 
     return (
-        <Paper withBorder shadow="sm" radius="md" p="xl">
+        <Stack gap="lg">
+            <Breadcrumbs>
+                <Anchor component={Link} to={`/modules/${moduleId}/assessments`} size="sm">
+                    {moduleTitle ?? "Assessments"}
+                </Anchor>
+                <Anchor component={Link} to={`/modules/${moduleId}/assessments/${assessmentId}/students`} size="sm">
+                    {assessmentTitle ?? "Submissions"}
+                </Anchor>
+                <Text size="sm" c="dimmed">{studentFullName ?? "Student"}</Text>
+            </Breadcrumbs>
             <Stack gap="xs" mb="lg">
-                <Title order={2}>Create Feedback</Title>
+                <Title order={2}>{isEditing ? "Edit Feedback" : "Create Feedback"}</Title>
                 <Text c="dimmed" size="sm">
                     {assessmentTitle} · {studentFullName}
                 </Text>
             </Stack>
 
-            <form onSubmit={form.onSubmit(handleSubmit)}>
+            <form>
                 <Stack gap="lg">
                     {markingItems.map((markingItem, index) => (
                         <Paper key={markingItem.id} withBorder p="md" radius="md">
@@ -90,15 +163,60 @@ const CreateFeedbackForm = ({ assessmentId, studentId, lecturerId, onSubmit, stu
 
                     <Textarea
                         label="Overall summary"
+                        withAsterisk
                         autosize
                         minRows={3}
                         {...form.getInputProps("summary")}
                     />
 
-                    <Button type="submit" loading={submitting}>Save feedback</Button>
+                    <Paper withBorder p="md" radius="md">
+                        <Text fw={600} mb="xs">Audio feedback (optional)</Text>
+
+                        {isEditing && (
+                            <AudioPlayer
+                                feedbackId={feedback.id}
+                                label="Current recording"
+                                refreshKey={audioVersion}
+                            />
+                        )}
+
+                        {error && <Text size="sm" c="red" mb="xs">{error}</Text>}
+
+                        {!audioBlob ? (
+                            <Button
+                                variant="light"
+                                color={recording ? "red" : "blue"}
+                                onClick={recording ? stop : start}
+                                mt={isEditing ? "sm" : undefined}
+                            >
+                                {recording ? "Stop recording" : (isEditing ? "Record new audio" : "Record audio")}
+                            </Button>
+                        ) : (
+                            <Stack gap="sm">
+                                {isEditing && (
+                                    <Text size="xs" c="dimmed" tt="uppercase" fw={600}>New recording</Text>
+                                )}
+                                <audio controls src={previewUrl} />
+                                <Button variant="subtle" color="red" onClick={reset}>
+                                    Discard and re-record
+                                </Button>
+                            </Stack>
+                        )}
+                    </Paper>
+
+                    <Group justify="flex-end">
+                        <Button variant="default" loading={submitting}
+                            onClick={() => form.onSubmit((values) => handleSubmit(values, false))()}>
+                            Save as draft
+                        </Button>
+                        <Button loading={submitting}
+                            onClick={() => form.onSubmit((values) => handleSubmit(values, true))()}>
+                            {isEditing ? "Save and publish" : "Publish"}
+                        </Button>
+                    </Group>
                 </Stack>
             </form>
-        </Paper>
+        </Stack>
     );
 };
 

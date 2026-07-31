@@ -35,18 +35,21 @@ public class FeedbackAudioService {
             throw new ForbiddenException("You are not authorised to upload audio for this feedback.");
         }
 
-        if (feedbackAudioRepository.existsByFeedbackId(feedbackId)) {
-            throw new AudioExistsException(feedbackId);
-        }
+        Optional<FeedbackAudio> existing = feedbackAudioRepository.findByFeedbackId(feedbackId);
 
         String filename = audioStorageService.store(file);
         try {
+            if (existing.isPresent()) {
+                feedbackAudioRepository.delete(existing.get());
+                feedbackAudioRepository.flush();
+            }
             feedbackAudioRepository.save(
                     new FeedbackAudio(feedback, filename, file.getContentType(), file.getSize()));
         } catch (RuntimeException e) {
             audioStorageService.delete(filename);
             throw e;
         }
+        existing.ifPresent(a -> audioStorageService.delete(a.getFilename()));
     }
 
     @Transactional(readOnly = true)

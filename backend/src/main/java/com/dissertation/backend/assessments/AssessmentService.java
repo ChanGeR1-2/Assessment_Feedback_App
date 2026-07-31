@@ -191,7 +191,7 @@ public class AssessmentService {
                 .map(item -> markingItemToResponse(item, assessment.getId()))
                 .toList();
         int totalMark = markingItems.stream().mapToInt(MarkingItemResponse::maxMark).sum();
-        return new AssessmentResponse(assessment.getId(), assessment.getTitle(), assessment.getDueDate(), assessment.getModule().getId(), markingItems, totalMark);
+        return new AssessmentResponse(assessment.getId(), assessment.getTitle(), assessment.getDueDate(), assessment.getModule().getId(), assessment.getModule().getTitle(), markingItems, totalMark);
     }
 
     private MarkingItemResponse markingItemToResponse(MarkingItem markingItem, Long assessmentId) {

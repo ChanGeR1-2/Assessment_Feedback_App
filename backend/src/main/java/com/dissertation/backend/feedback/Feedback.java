@@ -37,12 +37,16 @@ public class Feedback {
     private LocalDateTime createdAt;
     @OneToMany(mappedBy = "feedback", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FeedbackItem> items = new ArrayList<>();
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private FeedbackStatus status;
 
     @PrePersist
     void onCreate() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
+        status = FeedbackStatus.DRAFT;
     }
 
     protected Feedback() {}
@@ -108,4 +112,12 @@ public class Feedback {
     }
 
     public List<FeedbackItem> getItems() { return items; }
+
+    public FeedbackStatus getStatus() {
+        return status;
+    }
+
+    public void publish() {
+        this.status = FeedbackStatus.PUBLISHED;
+    }
 }

@@ -28,10 +28,25 @@ public class FeedbackController {
 
 
     @PostMapping("/api/feedback")
-    public ResponseEntity<FeedbackResponse> createFeedback(@Valid @RequestBody CreateFeedbackRequest request, @AuthenticationPrincipal AppUserDetails principal) {
-        return new ResponseEntity<>(feedbackService.saveFeedback(request, principal.getId()), HttpStatus.CREATED);
+    public ResponseEntity<FeedbackResponse> createFeedback(@Valid @RequestBody CreateFeedbackRequest request,
+                                                           @RequestParam(defaultValue = "false") boolean publish,
+                                                           @AuthenticationPrincipal AppUserDetails principal) {
+        return new ResponseEntity<>(feedbackService.saveFeedback(request, principal.getId(), publish), HttpStatus.CREATED);
     }
 
+    @PatchMapping("/api/feedback/{feedbackId}/publish")
+    public ResponseEntity<Void> publishFeedback(@PathVariable Long feedbackId, @AuthenticationPrincipal AppUserDetails principal) {
+        feedbackService.publishFeedback(feedbackId, principal.getId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/api/feedback/{feedbackId}")
+    public ResponseEntity<FeedbackResponse> editFeedback(@PathVariable Long feedbackId,
+                                                         @Valid @RequestBody CreateFeedbackRequest request,
+                                                         @RequestParam(defaultValue = "false") boolean publish,
+                                                         @AuthenticationPrincipal AppUserDetails principal) {
+        return new ResponseEntity<>(feedbackService.updateFeedback(feedbackId, request, principal.getId(), publish), HttpStatus.OK);
+    }
 
     @GetMapping("/api/assessments/{assessmentId}/students/{studentId}/feedback")
     public ResponseEntity<FeedbackResponse> getFeedback(@PathVariable Long assessmentId,

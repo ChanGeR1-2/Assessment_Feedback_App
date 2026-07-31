@@ -100,7 +100,6 @@ const AssessmentDetailsPage = () => {
     return (
         <Stack gap="lg">
             <Breadcrumbs>
-                <Anchor component={Link} to="/modules" size="sm">Modules</Anchor>
                 <Anchor component={Link} to={`/modules/${moduleId}/assessments`} size="sm">
                     {assessment.moduleTitle ?? "Assessments"}
                 </Anchor>

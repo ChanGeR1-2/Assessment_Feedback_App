@@ -12,10 +12,30 @@ export async function getFeedbackByStudentId ({studentId}){
     return await apiFetch(`/api/students/${studentId}/feedback`);
 }
 
-export async function submitFeedback ({feedback}){
-    return await apiFetch(`/api/feedback`, {
+export async function submitFeedback ({feedback, publish}){
+    console.log("publish:", publish)
+    const params = new URLSearchParams();
+    params.append("publish", publish);
+    const query = params.toString();
+    return await apiFetch(`/api/feedback${query ? `?${query}` : ""}`, {
         method: "POST",
         body: JSON.stringify( feedback )
+    });
+}
+
+export async function updateFeedback ({feedback, feedbackId, publish}){
+    const params = new URLSearchParams();
+    params.append("publish", publish);
+    const query = params.toString();
+    return await apiFetch(`/api/feedback/${feedbackId}${query ? `?${query}` : ""}`, {
+        method: "PUT",
+        body: JSON.stringify( feedback )
+    });
+}
+
+export async function publishFeedback ({feedbackId}){
+    return await apiFetch(`/api/feedback/${feedbackId}/publish`, {
+        method: "PUT"
     });
 }
 

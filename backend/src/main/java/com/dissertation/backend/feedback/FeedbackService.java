@@ -75,7 +75,8 @@ public class FeedbackService {
                 itemResponses,
                 feedback.getAssessment().getModule().getId(),
                 feedback.getAssessment().getModule().getTitle(),
-                feedback.getAssessment().getModule().getAcademicYear()
+                feedback.getAssessment().getModule().getAcademicYear(),
+                feedback.getStatus()
         );
     }
 
@@ -94,6 +95,7 @@ public class FeedbackService {
 
         List<Feedback> feedbacks = feedbackRepository.findByStudentId(studentId);
         return feedbacks.stream()
+                .filter(f -> f.getStatus() == FeedbackStatus.PUBLISHED)
                 .map(this::toResponse)
                 .toList();
     }
@@ -109,6 +111,9 @@ public class FeedbackService {
                 }
                 break;
             case STUDENT:
+                if (feedback.getStatus() != FeedbackStatus.PUBLISHED) {
+                    throw new FeedbackNotFoundException(feedbackId);
+                }
                 if (!Objects.equals(userDetails.getId(), feedback.getStudent().getId())) {
                     throw new ForbiddenException("You are not authorised to view this feedback.");
                 }
@@ -145,7 +150,21 @@ public class FeedbackService {
     }
 
     @Transactional
-    public FeedbackResponse saveFeedback(CreateFeedbackRequest createFeedbackRequest, Long lecturerId) {
+    public FeedbackResponse publishFeedback(Long feedbackId, Long lecturerId) {
+        Feedback feedback = feedbackRepository.findByIdWithDetails(feedbackId)
+                .orElseThrow(() -> new FeedbackNotFoundException(feedbackId));
+
+        if (feedback.getLecturer() == null
+                || !Objects.equals(feedback.getLecturer().getId(), lecturerId)) {
+            throw new ForbiddenException("You are not authorised to publish this feedback.");
+        }
+
+        feedback.publish();
+        return toResponse(feedback);
+    }
+
+    @Transactional
+    public FeedbackResponse saveFeedback(CreateFeedbackRequest createFeedbackRequest, Long lecturerId, boolean publish) {
         AppUser student = userRepository.findAppUserById(createFeedbackRequest.studentId())
                 .orElseThrow(() -> new UserNotFoundException(createFeedbackRequest.studentId()));
 
@@ -178,32 +197,58 @@ public class FeedbackService {
             throw new StudentNotEnrolledException(student.getId(), module.getId());
         }
 
+        Feedback feedback = new Feedback(student, lecturer, assessment, (short) 0,
+                createFeedbackRequest.summary());
+
+        feedback.setMark(validateAndBuildItems(feedback, assessment, createFeedbackRequest.items()));
+        if (publish) {
+            feedback.publish();
+        }
+        return toResponse(feedbackRepository.save(feedback));
+    }
+
+    @Transactional
+    public FeedbackResponse updateFeedback(Long feedbackId, CreateFeedbackRequest request, Long lecturerId, boolean publish) {
+        Feedback feedback = feedbackRepository.findByIdWithDetails(feedbackId)
+                .orElseThrow(() -> new FeedbackNotFoundException(feedbackId));
+
+        if (feedback.getLecturer() == null
+                || !Objects.equals(feedback.getLecturer().getId(), lecturerId)) {
+            throw new ForbiddenException("You are not authorised to edit this feedback.");
+        }
+
+        if (feedback.getStatus() != FeedbackStatus.DRAFT) {
+            throw new FeedbackNotEditableException(feedbackId);
+        }
+
+        feedback.setMark(validateAndBuildItems(feedback, feedback.getAssessment(), request.items()));
+        feedback.setSummary(request.summary());
+        if (publish) {
+            feedback.publish();
+        }
+
+        return toResponse(feedback);
+    }
+
+
+    private short validateAndBuildItems(Feedback feedback, Assessment assessment,
+                                        List<CreateFeedbackItemRequest> items) {
         Map<Long, MarkingItem> markingItems = markingItemRepository
                 .findByAssessmentIdOrderByPosition(assessment.getId()).stream()
                 .collect(Collectors.toMap(MarkingItem::getId, mi -> mi));
 
-        List<CreateFeedbackItemRequest> items = createFeedbackRequest.items();
-
         Set<Long> submittedIds = items.stream()
-                .map(CreateFeedbackItemRequest::markingItemId)
-                .collect(Collectors.toSet());
+                .map(CreateFeedbackItemRequest::markingItemId).collect(Collectors.toSet());
 
         if (submittedIds.size() != items.size()) {
             throw new DuplicateMarkingItemException("Feedback contains duplicate marking items.");
         }
-
         if (!submittedIds.equals(markingItems.keySet())) {
-            throw new IncompleteFeedbackException(
-                    "Submitted feedback does not cover all assessment items.");
+            throw new IncompleteFeedbackException("Submitted feedback does not cover all assessment items.");
         }
 
-        short totalAwarded = (short) items.stream()
-                .mapToInt(CreateFeedbackItemRequest::awardedMark)
-                .sum();
-
-        Feedback feedback = new Feedback(student, lecturer, assessment, totalAwarded,
-                createFeedbackRequest.summary());
-
+        feedback.getItems().clear();
+        short total = 0;
         for (CreateFeedbackItemRequest item : items) {
             MarkingItem markingItem = markingItems.get(item.markingItemId());
             if (item.awardedMark() > markingItem.getMaxMark()) {
@@ -211,8 +256,8 @@ public class FeedbackService {
                         item.awardedMark(), markingItem.getMaxMark(), item.markingItemId());
             }
             feedback.addItem(new FeedbackItem(feedback, markingItem, item.awardedMark(), item.comment()));
+            total += item.awardedMark();
         }
-
-        return toResponse(feedbackRepository.save(feedback));
+        return total;
     }
 }

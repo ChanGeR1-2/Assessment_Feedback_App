@@ -13,13 +13,13 @@ export async function getUserById({userId}) {
     return apiFetch(`/api/users/${userId}`)
 }
 
-export async function getStudents({moduleId}) {
+export async function getStudents({moduleId, assessmentId}) {
     const params = new URLSearchParams();
     params.append("moduleId", moduleId);
     const query = params.toString();
 
     const students =  await apiFetch(`/api/enrolments${query ? `?${query}` : ""}`);
-    const feedback =  await apiFetch(`/api/assessments/${moduleId}/feedback`);
+    const feedback =  await apiFetch(`/api/assessments/${assessmentId}/feedback`);
 
     students.map(student => {
         student.feedback = feedback.find(f => f.studentId === student.id);

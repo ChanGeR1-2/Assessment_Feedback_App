@@ -1,5 +1,7 @@
 package com.dissertation.backend.feedback.dto;
 
+import com.dissertation.backend.feedback.FeedbackStatus;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,6 +20,7 @@ public record FeedbackResponse(
         List<FeedbackItemResponse> items,
         Long moduleId,
         String moduleTitle,
-        String academicYear
+        String academicYear,
+        FeedbackStatus status
 ) {
 }

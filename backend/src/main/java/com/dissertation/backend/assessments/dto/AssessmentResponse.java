@@ -8,6 +8,7 @@ public record AssessmentResponse(
         String title,
         LocalDateTime dueDate,
         Long moduleId,
+        String moduleTitle,
         List<MarkingItemResponse> markingItems,
         Integer totalMark
 ) {

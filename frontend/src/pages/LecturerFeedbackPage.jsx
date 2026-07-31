@@ -1,5 +1,4 @@
 import { useParams } from "react-router";
-import { getCurrentUser } from "./auth/currentUser.js";
 import { useEffect, useState } from "react";
 import { getFeedbackByStudentIdAndAssessmentId } from "../api/feedbackApi.js";
 import { notifications } from "@mantine/notifications";
@@ -10,9 +9,7 @@ import { getAssessmentById } from "../api/assessmentsApi.js";
 import { getUserById } from "../api/usersApi.js";
 
 const LecturerFeedbackPage = () => {
-    const currentUser = getCurrentUser();
     const { assessmentId, studentId } = useParams();
-
     const [loading, setLoading] = useState(true);
     const [feedback, setFeedback] = useState(null);
     const [assessment, setAssessment] = useState({ markingItems: [] });
@@ -72,9 +69,7 @@ const LecturerFeedbackPage = () => {
         );
     }
 
-    console.log(feedback);
-
-    if (feedback) {
+    if (feedback?.status === "PUBLISHED") {
         return <StudentFeedbackSection feedback={feedback} />;
     }
 
@@ -88,13 +83,16 @@ const LecturerFeedbackPage = () => {
 
     return (
         <CreateFeedbackForm
+            key={feedback?.id ?? "new"}
             assessmentId={assessmentId}
             assessmentTitle={assessment.title}
             studentId={studentId}
             studentFullName={student.fullName}
-            lecturerId={currentUser?.id}
             markingItems={markingItems}
             onSubmit={onFormSubmit}
+            feedback={feedback}
+            moduleId={assessment.moduleId}
+            moduleTitle={assessment.moduleTitle}
         />
     );
 };

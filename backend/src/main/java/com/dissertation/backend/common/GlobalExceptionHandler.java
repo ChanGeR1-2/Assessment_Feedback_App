@@ -172,9 +172,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     // --- Payload too large (413) ---
 
-    @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<Map<String, String>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
-        return messageResponse(HttpStatus.CONTENT_TOO_LARGE, "The audio file is too large");
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+
+        Map<String, String> body = Map.of("message", "The audio file is too large");
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(body);
     }
 
     // --- Bean validation (@Valid) ---

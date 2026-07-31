@@ -1,9 +1,24 @@
-import { Button, Divider, Group, Modal, Paper, Progress, RingProgress, Stack, Text, Title } from "@mantine/core";
+import {
+    Anchor,
+    Breadcrumbs,
+    Button,
+    Divider,
+    Group,
+    Modal,
+    Paper,
+    Progress,
+    RingProgress,
+    Stack,
+    Text,
+    Title
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "../pages/auth/currentUser.js";
 import { getFeedbackQueryByFeedbackId } from "../api/feedbackApi.js";
 import CreateFeedbackQueryForm from "./CreateFeedbackQueryForm.jsx";
+import {Link} from "react-router";
+import AudioPlayer from "./AudioPlayer.jsx";
 
 const markColor = (percentage) => (percentage >= 40 ? "teal" : "red");
 
@@ -48,6 +63,28 @@ const StudentFeedbackSection = ({ feedback }) => {
 
     return (
         <Stack gap="lg">
+            {currentUser?.role === "LECTURER" && (
+                <Breadcrumbs>
+                    <Anchor component={Link} to={`/modules/${feedback.moduleId}/assessments`} size="sm">
+                        {feedback.moduleTitle ?? "Assessments"}
+                    </Anchor>
+                    <Anchor component={Link} to={`/modules/${feedback.moduleId}/assessments/${feedback.assessmentId}/students`} size="sm">
+                        {feedback.assessmentTitle ?? "Submissions"}
+                    </Anchor>
+                    <Text size="sm" c="dimmed">{feedback.studentFullName ?? "Student"}</Text>
+                </Breadcrumbs>
+            )}
+            {currentUser?.role === "STUDENT" && (
+                <Breadcrumbs>
+                    <Anchor component={Link} to={`/my-modules`} size="sm">
+                        Modules
+                    </Anchor>
+                    <Anchor component={Link} to={`/my-modules/${feedback.assessmentId}/feedback`} size="sm">
+                        {feedback.moduleTitle ?? "Assessments"}
+                    </Anchor>
+                    <Text size="sm" c="dimmed">{feedback.assessmentTitle}</Text>
+                </Breadcrumbs>
+            )}
             <Group justify="space-between" align="flex-start" wrap="nowrap">
                 <div>
                     <Title order={2}>Feedback</Title>
@@ -117,6 +154,8 @@ const StudentFeedbackSection = ({ feedback }) => {
                     </div>
                 ))}
             </Stack>
+
+            <AudioPlayer feedbackId={feedback.id} label="Audio feedback" />
 
             {isOwningStudent && (
                 <>

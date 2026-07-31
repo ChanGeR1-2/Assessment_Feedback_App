@@ -44,6 +44,10 @@ const CreateUserForm = ({onSuccess}) => {
             form.reset();
             onSuccess();
         } catch (e) {
+            if (e.fieldErrors) {
+                form.setErrors(e.fieldErrors);
+                return;
+            }
             notifications.show({
                 title: "User creation failed",
                 message: e.message,
