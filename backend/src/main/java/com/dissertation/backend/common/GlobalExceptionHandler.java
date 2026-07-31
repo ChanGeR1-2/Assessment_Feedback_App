@@ -25,6 +25,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.HashMap;
@@ -76,6 +77,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return messageResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(AudioNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleAudioNotFound(AudioNotFoundException ex) {
+        return messageResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
     // --- Conflicts (409) ---
 
     @ExceptionHandler(EmailExistsException.class)
@@ -103,11 +109,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return messageResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(AudioExistsException.class)
+    public ResponseEntity<Map<String, String>> handleAudioExists(AudioExistsException ex) {
+        return messageResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> handleDataIntegrity(DataIntegrityViolationException ex) {
         log.warn("Data integrity violation", ex);
         return messageResponse(HttpStatus.CONFLICT, "The operation conflicts with existing data");
     }
+
+
 
     // --- Bad requests (400) ---
 
@@ -147,9 +160,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(InvalidAudioException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidAudio(InvalidAudioException ex) {
+        return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
         return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    // --- Payload too large (413) ---
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, String>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        return messageResponse(HttpStatus.CONTENT_TOO_LARGE, "The audio file is too large");
     }
 
     // --- Bean validation (@Valid) ---
@@ -175,7 +200,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
-    // --- Catch-all (500): log the real cause, return a generic message ---
+    // --- Server errors (500) ---
+
+    @ExceptionHandler(AudioStorageException.class)
+    public ResponseEntity<Map<String, String>> handleAudioStorage(AudioStorageException ex) {
+        log.error("Audio storage failure", ex);
+        return messageResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Could not save the audio recording");
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception ex) {

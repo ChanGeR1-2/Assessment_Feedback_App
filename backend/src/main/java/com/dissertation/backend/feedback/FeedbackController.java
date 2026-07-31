@@ -4,18 +4,26 @@ import com.dissertation.backend.config.AppUserDetails;
 import com.dissertation.backend.feedback.dto.CreateFeedbackRequest;
 import com.dissertation.backend.feedback.dto.FeedbackResponse;
 import jakarta.validation.Valid;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @RestController
 public class FeedbackController {
     private final FeedbackService feedbackService;
-    public FeedbackController(FeedbackService feedbackService) {
+    private final AudioStorageService audioStorageService;
+    private final FeedbackAudioService feedbackAudioService;
+    public FeedbackController(FeedbackService feedbackService, AudioStorageService audioStorageService, FeedbackAudioService feedbackAudioService) {
         this.feedbackService = feedbackService;
+        this.audioStorageService = audioStorageService;
+        this.feedbackAudioService = feedbackAudioService;
     }
 
 
@@ -50,5 +58,25 @@ public class FeedbackController {
     @GetMapping(path = "/api/feedback/{id}")
     public ResponseEntity<FeedbackResponse> getFeedbackById(@PathVariable Long id, @AuthenticationPrincipal AppUserDetails principal) {
         return ResponseEntity.ok(feedbackService.getFeedbackById(id, principal));
+    }
+
+    @PostMapping(path = "/api/feedback/{feedbackId}/audio",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> uploadAudio(@PathVariable Long feedbackId,
+                                            @RequestParam("file") MultipartFile file,
+                                            @AuthenticationPrincipal AppUserDetails principal) {
+        feedbackAudioService.saveAudio(feedbackId, file, principal.getId());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping("/api/feedback/{feedbackId}/audio")
+    public ResponseEntity<Resource> getAudio(@PathVariable Long feedbackId,
+                                             @AuthenticationPrincipal AppUserDetails principal) {
+        FeedbackAudio audio = feedbackAudioService.getAudioMetadata(feedbackId, principal);
+        Resource resource = audioStorageService.load(audio.getFilename());
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(audio.getContentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
+                .body(resource);
     }
 }

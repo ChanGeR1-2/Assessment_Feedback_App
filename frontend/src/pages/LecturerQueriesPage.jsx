@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import {
     Badge, Button, Card, Group, Loader, Modal, Paper, Stack, Text, Textarea, Title
 } from "@mantine/core";
-import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
-import { answerFeedbackQuery, getUnansweredQueries } from "../api/feedbackApi.js";
+import { getUnansweredQueries } from "../api/feedbackApi.js";
+import AnswerForm from "../components/AnswerForm.jsx";
 
 const LecturerQueriesPage = () => {
     const [queries, setQueries] = useState([]);
@@ -100,72 +100,6 @@ const LecturerQueriesPage = () => {
                 )}
             </Modal>
         </Stack>
-    );
-};
-
-const AnswerForm = ({ query, onSuccess }) => {
-    const [submitting, setSubmitting] = useState(false);
-
-    const form = useForm({
-        initialValues: { answer: "" },
-        validate: {
-            answer: (v) =>
-                v.trim().length >= 3 ? null : "Please enter a response of at least 3 characters",
-        },
-    });
-
-    const handleSubmit = async (values) => {
-        setSubmitting(true);
-        try {
-            await answerFeedbackQuery({
-                feedbackQueryId: query.id,
-                answer: values.answer,
-            });
-            notifications.show({
-                title: "Answer sent",
-                message: "The student can now see your answer.",
-                color: "green",
-            });
-            onSuccess(query.id);
-        } catch (e) {
-            if (e.fieldErrors) {
-                form.setErrors(e.fieldErrors);
-                return;
-            }
-            notifications.show({
-                title: "Couldn't send your answer",
-                message: e.message,
-                color: "red",
-            });
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    return (
-        <form onSubmit={form.onSubmit(handleSubmit)}>
-            <Stack gap="md">
-                <div>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-                        {query.studentFullName} asked
-                    </Text>
-                    <Text style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{query.query}</Text>
-                </div>
-                <Textarea
-                    label="Your answer"
-                    placeholder="Answer the student's question..."
-                    autosize
-                    minRows={4}
-                    maxRows={12}
-                    required
-                    key={form.key("answer")}
-                    {...form.getInputProps("answer")}
-                />
-                <Button type="submit" loading={submitting}>
-                    Send answer
-                </Button>
-            </Stack>
-        </form>
     );
 };
 
