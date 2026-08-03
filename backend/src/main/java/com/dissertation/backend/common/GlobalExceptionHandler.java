@@ -13,6 +13,7 @@ import com.dissertation.backend.course_modules.exceptions.ModuleExistsException;
 import com.dissertation.backend.course_modules.exceptions.ModuleNotFoundException;
 import com.dissertation.backend.enrolment.exceptions.EnrolmentExistsException;
 import com.dissertation.backend.feedback.exceptions.*;
+import com.dissertation.backend.phrases.exceptions.PhraseNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -79,6 +80,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(AudioNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleAudioNotFound(AudioNotFoundException ex) {
+        return messageResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(PhraseNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handlePhraseNotFound(PhraseNotFoundException ex) {
         return messageResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 

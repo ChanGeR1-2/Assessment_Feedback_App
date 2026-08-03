@@ -24,6 +24,7 @@ import StudentFeedbackPage from "./pages/StudentFeedbackPage.jsx";
 import LecturerQueriesPage from "./pages/LecturerQueriesPage.jsx";
 import StudentModuleFeedbackPage from "./pages/StudentModuleFeedbackPage.jsx";
 import StudentModulesPage from "./pages/StudentModulesPage.jsx";
+import FeedbackPhrasesPage from "./pages/FeedbackPhrasesPage.jsx";
 
 const router = createBrowserRouter([
     {
@@ -76,7 +77,12 @@ const router = createBrowserRouter([
                     },
                     {
                         path: "queries",
-                        element: <LecturerQueriesPage /> }
+                        element: <LecturerQueriesPage />
+                    },
+                    {
+                        path: "phrases",
+                        element: <FeedbackPhrasesPage />
+                    }
                 ]
             },
             {

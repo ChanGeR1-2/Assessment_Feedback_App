@@ -2,7 +2,7 @@ import "./Navbar.css";
 import {Stack, NavLink as MantineNavLink, Box} from "@mantine/core";
 import {NavLink as RouterNavLink} from "react-router";
 import {useEffect, useState} from "react";
-import {getLecturerModules, getStudentModules} from "../../api/modulesApi.js";
+import {getLecturerModules} from "../../api/modulesApi.js";
 import {notifications} from "@mantine/notifications";
 import {getCurrentUser} from "../../pages/auth/currentUser.js";
 
@@ -20,6 +20,7 @@ const Navbar = ({onNavigate}) => {
             {to: "/lecturer-dashboard", label: "Dashboard"},
             {to: "/modules", label: "Modules"},
             {to: "/queries", label: "Queries"},
+            {to: "/phrases", label: "Phrases"},
         ],
         STUDENT: [
             {to: "/student-dashboard", label: "Dashboard"},

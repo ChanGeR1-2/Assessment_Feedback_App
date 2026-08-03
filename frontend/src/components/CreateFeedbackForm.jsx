@@ -6,6 +6,8 @@ import {submitFeedback, updateFeedback} from "../api/feedbackApi.js";
 import {Link} from "react-router";
 import {useAudioRecorder} from "../utils/audio.js";
 import AudioPlayer from "./AudioPlayer.jsx";
+import {getMyPhrases} from "../api/phrasesApi.js";
+import PhrasePicker from "./PhrasePicker.jsx";
 
 const CreateFeedbackForm = ({
     assessmentId,
@@ -26,7 +28,12 @@ const CreateFeedbackForm = ({
         [audioBlob]
     );
     const [audioVersion, setAudioVersion] = useState(0);
+    const [phrases, setPhrases] = useState([]);
     useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+
+    useEffect(() => {
+        getMyPhrases().then(setPhrases).catch(() => {});
+    }, []);
 
     const form = useForm({
         initialValues: {
@@ -56,6 +63,11 @@ const CreateFeedbackForm = ({
 
     const total = form.values.items.reduce((sum, i) => sum + (i.awardedMark || 0), 0);
     const maxTotal = markingItems.reduce((sum, mi) => sum + mi.maxMark, 0);
+
+    const insertPhrase = (field, text) => {
+        const current = field.split(".").reduce((obj, key) => obj?.[key], form.getValues()) ?? "";
+        form.setFieldValue(field, current ? `${current} ${text}` : text);
+    };
 
     const handleSubmit = async (values, publish) => {
         setSubmitting(true);
@@ -134,6 +146,7 @@ const CreateFeedbackForm = ({
 
             <form>
                 <Stack gap="lg">
+
                     {markingItems.map((markingItem, index) => (
                         <Paper key={markingItem.id} withBorder p="md" radius="md">
                             <Group justify="space-between" mb="sm">
@@ -146,6 +159,12 @@ const CreateFeedbackForm = ({
                                     allowDecimal={false}
                                     suffix={` / ${markingItem.maxMark}`}
                                     {...form.getInputProps(`items.${index}.awardedMark`)}
+                                />
+                            </Group>
+                            <Group justify="space-between" mb={4}>
+                                <PhrasePicker
+                                    phrases={phrases}
+                                    onInsert={(text) => insertPhrase(`items.${index}.comment`, text)}
                                 />
                             </Group>
                             <Textarea
@@ -161,8 +180,11 @@ const CreateFeedbackForm = ({
                         <Text fw={700}>Total: {total} / {maxTotal}</Text>
                     </Group>
 
+                    <Group justify="space-between" mb={4}>
+                        <Text size="lg" fw={700}>Overall summary</Text>
+                        <PhrasePicker phrases={phrases} onInsert={(text) => insertPhrase("summary", text)} />
+                    </Group>
                     <Textarea
-                        label="Overall summary"
                         withAsterisk
                         autosize
                         minRows={3}
