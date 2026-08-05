@@ -1,4 +1,16 @@
-import {Anchor, Breadcrumbs, Button, Group, NumberInput, Paper, Stack, Text, Textarea, Title} from "@mantine/core";
+import {
+    Anchor,
+    Breadcrumbs,
+    Button,
+    Group,
+    MultiSelect,
+    NumberInput,
+    Paper,
+    Stack,
+    Text,
+    Textarea,
+    Title
+} from "@mantine/core";
 import {useEffect, useMemo, useState} from "react";
 import {useForm} from "@mantine/form";
 import {notifications} from "@mantine/notifications";
@@ -8,6 +20,7 @@ import {useAudioRecorder} from "../utils/audio.js";
 import AudioPlayer from "./AudioPlayer.jsx";
 import {getMyPhrases} from "../api/phrasesApi.js";
 import PhrasePicker from "./PhrasePicker.jsx";
+import {getAllTags} from "../api/tagsApi.js";
 
 const CreateFeedbackForm = ({
     assessmentId,
@@ -29,10 +42,12 @@ const CreateFeedbackForm = ({
     );
     const [audioVersion, setAudioVersion] = useState(0);
     const [phrases, setPhrases] = useState([]);
+    const [tags, setTags] = useState([]);
     useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
     useEffect(() => {
         getMyPhrases().then(setPhrases).catch(() => {});
+        getAllTags().then(setTags).catch(() => {});
     }, []);
 
     const form = useForm({
@@ -46,6 +61,12 @@ const CreateFeedbackForm = ({
                     comment: feedbackItem?.comment ?? ""
                 }
             }),
+            strengthTagIds: feedback?.tags
+                ?.filter((t) => t.tagType === "STRENGTH")
+                .map((t) => String(t.tagId)) ?? [],
+            improvementTagIds: feedback?.tags
+                ?.filter((t) => t.tagType === "IMPROVEMENT")
+                .map((t) => String(t.tagId)) ?? [],
         },
         validate: {
             summary: (value) => (value.trim().length >= 10 ? null : "Summary must be at least 10 characters"),
@@ -61,6 +82,15 @@ const CreateFeedbackForm = ({
         },
     });
 
+    const tagOptions = tags.map((t) => ({ value: String(t.id), label: t.name }));
+
+    const strengthOptions = tagOptions.filter(
+        (o) => !form.values.improvementTagIds.includes(o.value)
+    );
+    const improvementOptions = tagOptions.filter(
+        (o) => !form.values.strengthTagIds.includes(o.value)
+    );
+
     const total = form.values.items.reduce((sum, i) => sum + (i.awardedMark || 0), 0);
     const maxTotal = markingItems.reduce((sum, mi) => sum + mi.maxMark, 0);
 
@@ -71,26 +101,29 @@ const CreateFeedbackForm = ({
 
     const handleSubmit = async (values, publish) => {
         setSubmitting(true);
+        const tags = [
+            ...values.strengthTagIds.map((id) => ({ tagId: Number(id), tagType: "STRENGTH" })),
+            ...values.improvementTagIds.map((id) => ({ tagId: Number(id), tagType: "IMPROVEMENT" })),
+        ];
+
+        const payload = {
+            summary: values.summary,
+            items: values.items,
+            assessmentId,
+            studentId,
+            tags,
+        };
         try {
             const savedFeedback = isEditing
                 ? await updateFeedback({
                     feedbackId: feedback.id,
-                    feedback: {
-                        ...values,
-                        assessmentId,
-                        studentId
-                    },
+                    feedback: payload,
                     publish
                 })
                 : await submitFeedback({
-                    feedback: {
-                        ...values,
-                        assessmentId,
-                        studentId
-                    },
+                    feedback: payload,
                     publish
                 });
-            savedFeedback.status = publish ? "PUBLISHED" : "DRAFT";
 
             if (audioBlob) {
                 try {
@@ -162,10 +195,8 @@ const CreateFeedbackForm = ({
                                 />
                             </Group>
                             <Group justify="space-between" mb={4}>
-                                <PhrasePicker
-                                    phrases={phrases}
-                                    onInsert={(text) => insertPhrase(`items.${index}.comment`, text)}
-                                />
+                                <Text size="sm" fw={500}>Comments</Text>
+                                <PhrasePicker phrases={phrases} onInsert={(text) => insertPhrase(`items.${index}.comment`, text)} />
                             </Group>
                             <Textarea
                                 placeholder="Comments on this criterion"
@@ -190,6 +221,28 @@ const CreateFeedbackForm = ({
                         minRows={3}
                         {...form.getInputProps("summary")}
                     />
+
+                    <Paper withBorder p="md" radius="md">
+                        <Text fw={600} mb="xs">Themes (optional)</Text>
+                        <Stack gap="md">
+                            <MultiSelect
+                                label="Strengths"
+                                placeholder="What did they do consistently well?"
+                                data={strengthOptions}
+                                searchable
+                                clearable
+                                {...form.getInputProps("strengthTagIds")}
+                            />
+                            <MultiSelect
+                                label="Areas for improvement"
+                                placeholder="What should they focus on?"
+                                data={improvementOptions}
+                                searchable
+                                clearable
+                                {...form.getInputProps("improvementTagIds")}
+                            />
+                        </Stack>
+                    </Paper>
 
                     <Paper withBorder p="md" radius="md">
                         <Text fw={600} mb="xs">Audio feedback (optional)</Text>

@@ -1,4 +1,4 @@
-package com.dissertation.backend.feedback.exceptions;
+package com.dissertation.backend.feedback_queries.exceptions;
 
 public class FeedbackQueryNotFoundException extends RuntimeException {
     public FeedbackQueryNotFoundException(Long id) {

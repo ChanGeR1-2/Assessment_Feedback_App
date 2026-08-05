@@ -1,5 +1,6 @@
 package com.dissertation.backend.feedback.dto;
 
+import com.dissertation.backend.tags.dto.CreateFeedbackTagRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
@@ -15,6 +16,8 @@ public record CreateFeedbackRequest(
         @NotEmpty(message = "At least one feedback item is required")
         @Size(max = 50, message = "Too many feedback items")
         @Valid
-        List<CreateFeedbackItemRequest> items
+        List<CreateFeedbackItemRequest> items,
+        @Valid
+        List<CreateFeedbackTagRequest> tags
 ) {
 }

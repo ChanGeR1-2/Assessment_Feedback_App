@@ -1,4 +1,4 @@
-package com.dissertation.backend.feedback;
+package com.dissertation.backend.feedback_audio;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

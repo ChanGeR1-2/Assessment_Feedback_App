@@ -9,7 +9,6 @@ import com.dissertation.backend.assessments.AssessmentRepository;
 import com.dissertation.backend.assessments.MarkingItem;
 import com.dissertation.backend.assessments.MarkingItemRepository;
 import com.dissertation.backend.assessments.exceptions.AssessmentNotFoundException;
-import com.dissertation.backend.assessments.exceptions.MarkingItemNotFoundException;
 import com.dissertation.backend.common.exceptions.ForbiddenException;
 import com.dissertation.backend.common.exceptions.InvalidRoleException;
 import com.dissertation.backend.config.AppUserDetails;
@@ -20,6 +19,13 @@ import com.dissertation.backend.feedback.dto.CreateFeedbackRequest;
 import com.dissertation.backend.feedback.dto.FeedbackItemResponse;
 import com.dissertation.backend.feedback.dto.FeedbackResponse;
 import com.dissertation.backend.feedback.exceptions.*;
+import com.dissertation.backend.tags.FeedbackTag;
+import com.dissertation.backend.tags.Tag;
+import com.dissertation.backend.tags.TagRepository;
+import com.dissertation.backend.tags.dto.CreateFeedbackTagRequest;
+import com.dissertation.backend.tags.dto.FeedbackTagResponse;
+import com.dissertation.backend.tags.exceptions.DuplicateTagException;
+import com.dissertation.backend.tags.exceptions.TagNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,12 +39,14 @@ public class FeedbackService {
     private final UserRepository userRepository;
     private final EnrolmentRepository enrolmentRepository;
     private final MarkingItemRepository markingItemRepository;
-    public FeedbackService(FeedbackRepository feedbackRepository, AssessmentRepository assessmentRepository, UserRepository userRepository, EnrolmentRepository enrolmentRepository, MarkingItemRepository markingItemRepository) {
+    private final TagRepository tagRepository;
+    public FeedbackService(FeedbackRepository feedbackRepository, AssessmentRepository assessmentRepository, UserRepository userRepository, EnrolmentRepository enrolmentRepository, MarkingItemRepository markingItemRepository, TagRepository tagRepository) {
         this.feedbackRepository = feedbackRepository;
         this.assessmentRepository = assessmentRepository;
         this.userRepository = userRepository;
         this.enrolmentRepository = enrolmentRepository;
         this.markingItemRepository = markingItemRepository;
+        this.tagRepository = tagRepository;
     }
 
     private FeedbackResponse toResponse(Feedback feedback) {
@@ -46,6 +54,7 @@ public class FeedbackService {
         Assessment assessment = feedback.getAssessment();
 
         List<FeedbackItemResponse> itemResponses = feedback.getItems().stream()
+                .sorted(Comparator.comparing(i -> i.getMarkingItem().getPosition()))
                 .map(item -> new FeedbackItemResponse(
                         item.getId(),
                         feedback.getId(),
@@ -59,6 +68,14 @@ public class FeedbackService {
         Integer totalMark = feedback.getItems().stream()
                 .mapToInt(i -> i.getMarkingItem().getMaxMark())
                 .sum();
+
+        List<FeedbackTagResponse> tagResponses = feedback.getTags().stream()
+                .map(ft -> new FeedbackTagResponse(
+                        ft.getId(),
+                        ft.getTag().getId(),
+                        ft.getTag().getName(),
+                        ft.getTagType()))
+                .toList();
 
         return new FeedbackResponse(
                 feedback.getId(),
@@ -76,7 +93,8 @@ public class FeedbackService {
                 feedback.getAssessment().getModule().getId(),
                 feedback.getAssessment().getModule().getTitle(),
                 feedback.getAssessment().getModule().getAcademicYear(),
-                feedback.getStatus()
+                feedback.getStatus(),
+                tagResponses
         );
     }
 
@@ -93,9 +111,8 @@ public class FeedbackService {
             throw new InvalidRoleException(student.getId(), UserRole.STUDENT);
         }
 
-        List<Feedback> feedbacks = feedbackRepository.findByStudentId(studentId);
+        List<Feedback> feedbacks = feedbackRepository.findByStudentId(studentId, FeedbackStatus.PUBLISHED);
         return feedbacks.stream()
-                .filter(f -> f.getStatus() == FeedbackStatus.PUBLISHED)
                 .map(this::toResponse)
                 .toList();
     }
@@ -154,8 +171,7 @@ public class FeedbackService {
         Feedback feedback = feedbackRepository.findByIdWithDetails(feedbackId)
                 .orElseThrow(() -> new FeedbackNotFoundException(feedbackId));
 
-        if (feedback.getLecturer() == null
-                || !Objects.equals(feedback.getLecturer().getId(), lecturerId)) {
+        if (!Objects.equals(feedback.getLecturer().getId(), lecturerId)) {
             throw new ForbiddenException("You are not authorised to publish this feedback.");
         }
 
@@ -201,6 +217,7 @@ public class FeedbackService {
                 createFeedbackRequest.summary());
 
         feedback.setMark(validateAndBuildItems(feedback, assessment, createFeedbackRequest.items()));
+        validateAndBuildTags(feedback, createFeedbackRequest.tags() == null ? List.of() : createFeedbackRequest.tags());
         if (publish) {
             feedback.publish();
         }
@@ -212,8 +229,7 @@ public class FeedbackService {
         Feedback feedback = feedbackRepository.findByIdWithDetails(feedbackId)
                 .orElseThrow(() -> new FeedbackNotFoundException(feedbackId));
 
-        if (feedback.getLecturer() == null
-                || !Objects.equals(feedback.getLecturer().getId(), lecturerId)) {
+        if (!Objects.equals(feedback.getLecturer().getId(), lecturerId)) {
             throw new ForbiddenException("You are not authorised to edit this feedback.");
         }
 
@@ -222,6 +238,7 @@ public class FeedbackService {
         }
 
         feedback.setMark(validateAndBuildItems(feedback, feedback.getAssessment(), request.items()));
+        validateAndBuildTags(feedback, request.tags() == null ? List.of() : request.tags());
         feedback.setSummary(request.summary());
         if (publish) {
             feedback.publish();
@@ -230,6 +247,28 @@ public class FeedbackService {
         return toResponse(feedback);
     }
 
+    private void validateAndBuildTags(Feedback feedback, List<CreateFeedbackTagRequest> tags) {
+        Set<Long> tagIds = tags.stream()
+                .map(CreateFeedbackTagRequest::tagId)
+                .collect(Collectors.toSet());
+
+        if (tagIds.size() != tags.size()) {
+            throw new DuplicateTagException("Feedback contains duplicate tags.");
+        }
+
+        Map<Long, Tag> tagsById = tagRepository.findAllById(tagIds).stream()
+                .collect(Collectors.toMap(Tag::getId, t -> t));
+
+        if (tagsById.size() != tagIds.size()) {
+            throw new TagNotFoundException("One or more tags do not exist.");
+        }
+
+        feedback.getTags().clear();
+        feedbackRepository.flush();
+        for (CreateFeedbackTagRequest tag : tags) {
+            feedback.addTag(new FeedbackTag(tagsById.get(tag.tagId()), feedback, tag.tagType()));
+        }
+    }
 
     private short validateAndBuildItems(Feedback feedback, Assessment assessment,
                                         List<CreateFeedbackItemRequest> items) {
@@ -248,6 +287,7 @@ public class FeedbackService {
         }
 
         feedback.getItems().clear();
+        feedbackRepository.flush();
         short total = 0;
         for (CreateFeedbackItemRequest item : items) {
             MarkingItem markingItem = markingItems.get(item.markingItemId());

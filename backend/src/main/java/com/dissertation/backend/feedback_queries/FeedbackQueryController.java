@@ -1,7 +1,10 @@
-package com.dissertation.backend.feedback;
+package com.dissertation.backend.feedback_queries;
 
 import com.dissertation.backend.config.AppUserDetails;
 import com.dissertation.backend.feedback.dto.*;
+import com.dissertation.backend.feedback_queries.dto.CreateFeedbackQueryAnswerRequest;
+import com.dissertation.backend.feedback_queries.dto.CreateFeedbackQueryRequest;
+import com.dissertation.backend.feedback_queries.dto.FeedbackQueryResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

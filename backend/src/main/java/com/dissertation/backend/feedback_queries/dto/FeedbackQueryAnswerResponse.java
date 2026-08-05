@@ -1,4 +1,4 @@
-package com.dissertation.backend.feedback.dto;
+package com.dissertation.backend.feedback_queries.dto;
 
 import java.time.LocalDateTime;
 

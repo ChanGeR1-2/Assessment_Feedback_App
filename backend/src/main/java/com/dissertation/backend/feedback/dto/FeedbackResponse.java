@@ -1,6 +1,7 @@
 package com.dissertation.backend.feedback.dto;
 
 import com.dissertation.backend.feedback.FeedbackStatus;
+import com.dissertation.backend.tags.dto.FeedbackTagResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +22,7 @@ public record FeedbackResponse(
         Long moduleId,
         String moduleTitle,
         String academicYear,
-        FeedbackStatus status
+        FeedbackStatus status,
+        List<FeedbackTagResponse> tags
 ) {
 }

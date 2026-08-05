@@ -1,4 +1,4 @@
-package com.dissertation.backend.feedback;
+package com.dissertation.backend.feedback_audio;
 
 import com.dissertation.backend.feedback.exceptions.AudioNotFoundException;
 import com.dissertation.backend.feedback.exceptions.AudioStorageException;

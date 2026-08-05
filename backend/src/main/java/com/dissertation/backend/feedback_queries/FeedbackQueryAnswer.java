@@ -1,4 +1,4 @@
-package com.dissertation.backend.feedback;
+package com.dissertation.backend.feedback_queries;
 
 import com.dissertation.backend.app_users.AppUser;
 import jakarta.persistence.*;

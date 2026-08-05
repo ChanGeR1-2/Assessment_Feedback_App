@@ -1,5 +1,5 @@
 import {
-    Anchor,
+    Anchor, Badge,
     Breadcrumbs,
     Button,
     Divider,
@@ -79,7 +79,7 @@ const StudentFeedbackSection = ({ feedback }) => {
                     <Anchor component={Link} to={`/my-modules`} size="sm">
                         Modules
                     </Anchor>
-                    <Anchor component={Link} to={`/my-modules/${feedback.assessmentId}/feedback`} size="sm">
+                    <Anchor component={Link} to={`/my-modules/${feedback.moduleId}/feedback`} size="sm">
                         {feedback.moduleTitle ?? "Assessments"}
                     </Anchor>
                     <Text size="sm" c="dimmed">{feedback.assessmentTitle}</Text>
@@ -125,6 +125,37 @@ const StudentFeedbackSection = ({ feedback }) => {
                 <Paper withBorder p="md" radius="md">
                     <Text fw={600} mb={4}>Overall summary</Text>
                     <Text style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{feedback.summary}</Text>
+                </Paper>
+            )}
+
+            {feedback.tags?.length > 0 && (
+                <Paper withBorder p="md" radius="md">
+                    <Stack gap="sm">
+                        {feedback.tags.some((t) => t.tagType === "STRENGTH") && (
+                            <div>
+                                <Text size="xs" c="dimmed" tt="uppercase" fw={600} mb={6}>Strengths</Text>
+                                <Group gap="xs">
+                                    {feedback.tags
+                                        .filter((t) => t.tagType === "STRENGTH")
+                                        .map((t) => (
+                                            <Badge key={t.id} variant="light" color="teal">{t.tagName}</Badge>
+                                        ))}
+                                </Group>
+                            </div>
+                        )}
+                        {feedback.tags.some((t) => t.tagType === "IMPROVEMENT") && (
+                            <div>
+                                <Text size="xs" c="dimmed" tt="uppercase" fw={600} mb={6}>Areas for improvement</Text>
+                                <Group gap="xs">
+                                    {feedback.tags
+                                        .filter((t) => t.tagType === "IMPROVEMENT")
+                                        .map((t) => (
+                                            <Badge key={t.id} variant="light" color="orange">{t.tagName}</Badge>
+                                        ))}
+                                </Group>
+                            </div>
+                        )}
+                    </Stack>
                 </Paper>
             )}
 

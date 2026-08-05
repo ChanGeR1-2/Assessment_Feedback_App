@@ -1,11 +1,17 @@
-package com.dissertation.backend.feedback;
+package com.dissertation.backend.feedback_queries;
 
 import com.dissertation.backend.app_users.AppUser;
 import com.dissertation.backend.app_users.UserRepository;
 import com.dissertation.backend.app_users.exceptions.UserNotFoundException;
+import com.dissertation.backend.feedback.Feedback;
+import com.dissertation.backend.feedback.FeedbackRepository;
 import com.dissertation.backend.feedback.dto.*;
 import com.dissertation.backend.feedback.exceptions.FeedbackNotFoundException;
-import com.dissertation.backend.feedback.exceptions.FeedbackQueryNotFoundException;
+import com.dissertation.backend.feedback_queries.dto.CreateFeedbackQueryAnswerRequest;
+import com.dissertation.backend.feedback_queries.dto.CreateFeedbackQueryRequest;
+import com.dissertation.backend.feedback_queries.dto.FeedbackQueryAnswerResponse;
+import com.dissertation.backend.feedback_queries.dto.FeedbackQueryResponse;
+import com.dissertation.backend.feedback_queries.exceptions.FeedbackQueryNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
