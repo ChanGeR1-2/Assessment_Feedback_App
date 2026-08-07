@@ -2,7 +2,10 @@ package com.dissertation.backend.feedback_queries;
 
 import com.dissertation.backend.app_users.AppUser;
 import com.dissertation.backend.app_users.UserRepository;
+import com.dissertation.backend.app_users.UserRole;
 import com.dissertation.backend.app_users.exceptions.UserNotFoundException;
+import com.dissertation.backend.common.exceptions.ForbiddenException;
+import com.dissertation.backend.config.AppUserDetails;
 import com.dissertation.backend.feedback.Feedback;
 import com.dissertation.backend.feedback.FeedbackRepository;
 import com.dissertation.backend.feedback.dto.*;
@@ -41,6 +44,16 @@ public class FeedbackQueryService {
         return feedbackQueryRepository.findUnansweredByLecturerId(lecturerId)
                 .stream()
                 .map(this::toPendingResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<FeedbackQueryResponse> getFeedbackQueriesByStudentId(Long studentId, AppUserDetails principal) {
+        if (principal.getRole() == UserRole.STUDENT && !principal.getId().equals(studentId)) {
+            throw new ForbiddenException("You are not authorised to view this list of feedback queries.");
+        }
+        return feedbackQueryRepository.findByStudentId(studentId).stream()
+                .map(this::toResponse)
                 .toList();
     }
 

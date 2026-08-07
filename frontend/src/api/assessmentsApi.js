@@ -1,5 +1,8 @@
 import {apiFetch} from "./utils.js";
 
+export const getAssessments = async () =>
+    apiFetch(`/api/assessments`);
+
 export const getAssessmentsByModuleId = async ({ moduleId }) =>
     apiFetch(`/api/modules/${moduleId}/assessments`);
 

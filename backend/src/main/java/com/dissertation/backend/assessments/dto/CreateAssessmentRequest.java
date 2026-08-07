@@ -1,5 +1,6 @@
 package com.dissertation.backend.assessments.dto;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -11,6 +12,9 @@ public record CreateAssessmentRequest(
         @NotNull(message = "Due date is required")
         LocalDateTime dueDate,
         @NotNull(message = "Module ID is required")
-        Long moduleId
+        Long moduleId,
+        @NotNull(message = "Weight is required")
+        @Min(value = 0, message = "Weight must be at least 0")
+        Short weight
 ) {
 }

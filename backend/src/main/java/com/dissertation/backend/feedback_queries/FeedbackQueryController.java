@@ -28,6 +28,11 @@ public class FeedbackQueryController {
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
+    @GetMapping("/students/{studentId}/feedback-queries")
+    public ResponseEntity<List<FeedbackQueryResponse>> getFeedbackQueryByStudentId(@PathVariable Long studentId, @AuthenticationPrincipal AppUserDetails principal) {
+        return ResponseEntity.ok(feedbackQueryService.getFeedbackQueriesByStudentId(studentId, principal));
+    }
+
     @GetMapping("/lecturer/feedback-queries")
     public ResponseEntity<List<PendingQueryResponse>> getUnansweredFeedbackByLecturerId(@AuthenticationPrincipal AppUserDetails principal) {
         return ResponseEntity.ok(feedbackQueryService.getUnansweredFeedbackByLecturerId(principal.getId()));

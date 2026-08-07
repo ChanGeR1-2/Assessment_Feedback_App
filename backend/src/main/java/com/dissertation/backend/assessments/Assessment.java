@@ -23,15 +23,18 @@ public class Assessment {
     @OneToMany(mappedBy = "assessment", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
     private List<MarkingItem> markingItems = new ArrayList<>();
+    @Column(name = "weight")
+    private Short weight;
 
     public List<MarkingItem> getMarkingItems() { return markingItems; }
 
     protected Assessment() {}
 
-    public Assessment(String title, LocalDateTime dueDate, CourseModule module) {
+    public Assessment(String title, LocalDateTime dueDate, CourseModule module, Short weight) {
         this.title = title;
         this.dueDate = dueDate;
         this.module = module;
+        this.weight = weight;
     }
 
     public Long getId() {
@@ -60,5 +63,13 @@ public class Assessment {
 
     public void setModule(CourseModule module) {
         this.module = module;
+    }
+
+    public Short getWeight() {
+        return weight;
+    }
+
+    public void setWeight(Short weight) {
+        this.weight = weight;
     }
 }

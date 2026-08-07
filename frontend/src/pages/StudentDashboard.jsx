@@ -1,157 +1,210 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
-    Anchor, Badge, Card, Group, Loader, Paper, Progress,
-    SimpleGrid, Stack, Table, Text, Title
+    Anchor, Badge, Card, Grid, Group, Loader, Paper, SimpleGrid,
+    Stack, Table, Text, Title
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { getCurrentUser } from "./auth/currentUser.js";
-import {getStudentModules} from "../api/modulesApi.js";
-import { getFeedbackByStudentId } from "../api/feedbackApi.js";
+import {getFeedbackByStudentId, getStudentFeedbackQueries} from "../api/feedbackApi.js";
+import {getStudentTagCount} from "../api/tagsApi.js";
+import {TagSummary} from "../components/TagSummary.jsx";
+import {getAssessments} from "../api/assessmentsApi.js";
 
 const StudentDashboard = () => {
     const currentUser = getCurrentUser();
-    const studentId = currentUser?.id;
-
-    const [modules, setModules] = useState([]);
+    const navigate = useNavigate();
     const [feedback, setFeedback] = useState([]);
+    const [tagCounts, setTagCounts] = useState([]);
+    const [assessments, setAssessments] = useState([]);
+    const [queries, setQueries] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [lastSeen] = useState(() => localStorage.getItem("feedbackLastSeen"));
 
     useEffect(() => {
-        if (!studentId) return;
-
+        if (!currentUser?.id) return;
         let cancelled = false;
 
-        const load = async () => {
-            try {
-                const [moduleData, feedbackData] = await Promise.all([
-                    getStudentModules({ studentId }),
-                    getFeedbackByStudentId({ studentId }),
-                ]);
+        Promise.all([
+            getFeedbackByStudentId({ studentId: currentUser.id }),
+            getStudentTagCount({ studentId: currentUser.id }),
+            getAssessments(),
+            getStudentFeedbackQueries({studentId: currentUser.id})
+        ])
+            .then(([feedbackData, tagData, assessmentsData, queriesData]) => {
+                if (cancelled) return;
+                setFeedback(feedbackData);
+                setTagCounts(tagData);
+                setAssessments(assessmentsData);
+                setQueries(queriesData);
+            })
+            .catch((e) => {
                 if (!cancelled) {
-                    setModules(moduleData);
-                    setFeedback(feedbackData);
+                    notifications.show({ title: "Error", message: e.message, color: "red" });
                 }
-            } catch (error) {
-                if (!cancelled) {
-                    notifications.show({ title: "Error", message: error.message, color: "red" });
-                }
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        };
+            })
+            .finally(() => { if (!cancelled) setLoading(false); });
 
-        load();
+        localStorage.setItem("feedbackLastSeen", new Date().toISOString());
         return () => { cancelled = true; };
-    }, [studentId]);
+    }, [currentUser?.id]);
 
     const percentageOf = (f) =>
         f.totalMark ? Math.round((f.mark / f.totalMark) * 100) : 0;
+
+    const isNew = (f) => !lastSeen || new Date(f.createdAt) > new Date(lastSeen);
+
+    const sorted = [...feedback].sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+    const recent = sorted.slice(0, 3);
+    const newCount = feedback.filter(isNew).length;
 
     const average = feedback.length
         ? Math.round(feedback.reduce((sum, f) => sum + percentageOf(f), 0) / feedback.length)
         : null;
 
-    const recent = [...feedback]
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 5);
+    const markedAssessmentIds = new Set(feedback.map((f) => f.assessmentId));
+    const awaiting = assessments
+        .filter((a) => !markedAssessmentIds.has(a.id))
+        .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
     if (loading) {
-        return (
-            <Group justify="center" p="xl">
-                <Loader />
-            </Group>
-        );
+        return <Group justify="center" p="xl"><Loader /></Group>;
     }
 
     return (
         <Stack gap="lg">
             <div>
                 <Title order={1}>Welcome back, {currentUser?.fullName?.split(" ")[0]}</Title>
-                <Text c="dimmed">Your modules and recent feedback</Text>
+                <Text c="dimmed">
+                    {newCount > 0
+                        ? `You have ${newCount} new ${newCount === 1 ? "piece" : "pieces"} of feedback`
+                        : "No new feedback since your last visit"}
+                </Text>
             </div>
 
-            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-                <Card withBorder radius="md" padding="md">
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Modules</Text>
-                    <Text fw={700} size="xl">{modules.length}</Text>
-                </Card>
-                <Card withBorder radius="md" padding="md">
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Feedback received</Text>
-                    <Text fw={700} size="xl">{feedback.length}</Text>
-                </Card>
-                <Card withBorder radius="md" padding="md">
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Average</Text>
-                    <Text fw={700} size="xl">{average !== null ? `${average}%` : "—"}</Text>
-                </Card>
-            </SimpleGrid>
+            <Grid gutter="lg">
+                <Grid.Col span={{ base: 12, md: 7 }}>
+                    <Group justify="space-between" mb="xs">
+                        <Title order={4}>Recent feedback</Title>
+                        <Anchor component={Link} to="/my-modules" size="sm">View all</Anchor>
+                    </Group>
 
-            <div>
-                <Title order={3} mb="sm">Your modules</Title>
-                <Paper withBorder radius="md" style={{ overflow: "hidden" }}>
-                    {modules.length === 0 ? (
-                        <Text p="md" c="dimmed">You aren't enrolled in any modules yet.</Text>
-                    ) : (
-                        <Table striped highlightOnHover verticalSpacing="sm">
-                            <Table.Thead>
-                                <Table.Tr>
-                                    <Table.Th>Code</Table.Th>
-                                    <Table.Th>Title</Table.Th>
-                                    <Table.Th>Academic year</Table.Th>
-                                    <Table.Th>Lecturer</Table.Th>
-                                </Table.Tr>
-                            </Table.Thead>
-                            <Table.Tbody>
-                                {modules.map((module) => (
-                                    <Table.Tr key={module.id}>
-                                        <Table.Td fw={500}>{module.code}</Table.Td>
-                                        <Table.Td>{module.title}</Table.Td>
-                                        <Table.Td>{module.academicYear}</Table.Td>
-                                        <Table.Td c={module.lecturerName ? undefined : "dimmed"}>
-                                            {module.lecturerName ?? "Not assigned"}
-                                        </Table.Td>
-                                    </Table.Tr>
-                                ))}
-                            </Table.Tbody>
-                        </Table>
-                    )}
-                </Paper>
-            </div>
+                    <Paper withBorder radius="md" style={{ overflow: "hidden" }}>
+                        {recent.length === 0 ? (
+                            <Text p="md" c="dimmed">No feedback yet.</Text>
+                        ) : (
+                            <Table highlightOnHover verticalSpacing="sm">
+                                <Table.Tbody>
+                                    {recent.map((f) => {
+                                        const pct = percentageOf(f);
+                                        return (
+                                            <Table.Tr
+                                                key={f.id}
+                                                onClick={() => navigate(`/feedback/${f.id}`)}
+                                                style={{ cursor: "pointer" }}
+                                            >
+                                                <Table.Td>
+                                                    <Group gap="xs" wrap="nowrap">
+                                                        <Text fw={500} size="sm">{f.assessmentTitle}</Text>
+                                                        {isNew(f) && (
+                                                            <Badge size="xs" variant="filled">New</Badge>
+                                                        )}
+                                                    </Group>
+                                                    <Text size="xs" c="dimmed">{f.moduleTitle}</Text>
+                                                </Table.Td>
+                                                <Table.Td w={80} ta="right">
+                                                    <Badge
+                                                        variant="light"
+                                                        color={pct >= 40 ? "teal" : "red"}
+                                                    >
+                                                        {pct}%
+                                                    </Badge>
+                                                </Table.Td>
+                                            </Table.Tr>
+                                        );
+                                    })}
+                                </Table.Tbody>
+                            </Table>
+                        )}
+                    </Paper>
 
-            <div>
-                <Title order={3} mb="sm">Recent feedback</Title>
-                <Stack gap="sm">
-                    {recent.length === 0 ? (
-                        <Paper withBorder radius="md" p="md">
-                            <Text c="dimmed">No feedback yet.</Text>
-                        </Paper>
-                    ) : (
-                        recent.map((f) => {
-                            const pct = percentageOf(f);
-                            return (
-                                <Paper key={f.id} withBorder radius="md" p="md">
-                                    <Group justify="space-between" align="flex-start" wrap="nowrap" mb="xs">
-                                        <div>
-                                            <Anchor component={Link} to={`/feedback/${f.id}`} fw={600}>
-                                                {f.assessmentTitle}
-                                            </Anchor>
-                                            <Text size="xs" c="dimmed">
-                                                {new Date(f.createdAt).toLocaleDateString(undefined, {
-                                                    day: "numeric", month: "long", year: "numeric",
-                                                })}
-                                            </Text>
-                                        </div>
-                                        <Badge size="lg" variant="light" color={pct >= 40 ? "teal" : "red"}>
-                                            {f.mark} / {f.totalMark}
-                                        </Badge>
-                                    </Group>
-                                    <Progress value={pct} size="sm" radius="xl" color={pct >= 40 ? "teal" : "red"} />
+                    <SimpleGrid cols={2} spacing="md" mt="md">
+                        <Card withBorder radius="md" padding="sm">
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Feedback received</Text>
+                            <Text fw={700} size="xl">{feedback.length}</Text>
+                        </Card>
+                        <Card withBorder radius="md" padding="sm">
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Average</Text>
+                            <Text fw={700} size="xl">{average !== null ? `${average}%` : "—"}</Text>
+                        </Card>
+                    </SimpleGrid>
+                </Grid.Col>
+
+                <Grid.Col span={{ base: 12, md: 5 }}>
+                    <Stack gap="lg">
+                        <div>
+                            <Title order={4} mb="xs">Recurring themes</Title>
+                            <TagSummary counts={tagCounts} emptyMessage="..." />
+                        </div>
+
+                        {awaiting.length > 0 && (
+                            <div>
+                                <Title order={4} mb="xs">Awaiting feedback</Title>
+                                <Paper withBorder radius="md" p="md">
+                                    <Stack gap="xs">
+                                        {awaiting.slice(0, 4).map((a) => (
+                                            <Group key={a.id} justify="space-between" wrap="nowrap">
+                                                <div>
+                                                    <Text size="sm" fw={500}>{a.title}</Text>
+                                                    <Text size="xs" c="dimmed">{a.moduleTitle}</Text>
+                                                </div>
+                                                <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
+                                                    {a.dueDate
+                                                        ? new Date(a.dueDate).toLocaleDateString(undefined, {
+                                                            day: "numeric", month: "short" })
+                                                        : "—"}
+                                                </Text>
+                                            </Group>
+                                        ))}
+                                    </Stack>
                                 </Paper>
-                            );
-                        })
-                    )}
-                </Stack>
-            </div>
+                            </div>
+                        )}
+
+                        {queries.length > 0 && (
+                            <div>
+                                <Title order={4} mb="xs">Your questions</Title>
+                                <Paper withBorder radius="md" p="md">
+                                    <Stack gap="xs">
+                                        {queries.slice(0, 4).map((q) => (
+                                            <Group key={q.id} justify="space-between" wrap="nowrap">
+                                                <Anchor
+                                                    component={Link}
+                                                    to={`/feedback/${q.feedbackId}`}
+                                                    size="sm"
+                                                    lineClamp={1}
+                                                >
+                                                    {q.query}
+                                                </Anchor>
+                                                <Badge
+                                                    size="sm"
+                                                    variant="light"
+                                                    color={q.answer ? "teal" : "gray"}
+                                                    style={{ flexShrink: 0 }}
+                                                >
+                                                    {q.answer ? "Answered" : "Pending"}
+                                                </Badge>
+                                            </Group>
+                                        ))}
+                                    </Stack>
+                                </Paper>
+                            </div>
+                        )}
+                    </Stack>
+                </Grid.Col>
+            </Grid>
         </Stack>
     );
 };

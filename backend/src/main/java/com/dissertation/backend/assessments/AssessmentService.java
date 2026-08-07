@@ -112,7 +112,7 @@ public class AssessmentService {
         CourseModule module = moduleRepository.findById(request.moduleId())
                 .orElseThrow(() -> new InvalidModuleException(request.moduleId()));
 
-        Assessment assessment = new Assessment(request.title(), request.dueDate(), module);
+        Assessment assessment = new Assessment(request.title(), request.dueDate(), module, request.weight());
         return assessmentToResponse(assessmentRepository.save(assessment));
     }
 
@@ -191,7 +191,7 @@ public class AssessmentService {
                 .map(item -> markingItemToResponse(item, assessment.getId()))
                 .toList();
         int totalMark = markingItems.stream().mapToInt(MarkingItemResponse::maxMark).sum();
-        return new AssessmentResponse(assessment.getId(), assessment.getTitle(), assessment.getDueDate(), assessment.getModule().getId(), assessment.getModule().getTitle(), markingItems, totalMark);
+        return new AssessmentResponse(assessment.getId(), assessment.getTitle(), assessment.getDueDate(), assessment.getModule().getId(), assessment.getModule().getTitle(), markingItems, totalMark, assessment.getWeight());
     }
 
     private MarkingItemResponse markingItemToResponse(MarkingItem markingItem, Long assessmentId) {

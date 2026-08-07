@@ -60,3 +60,5 @@ export const answerFeedbackQuery = async ({ feedbackQueryId, answer }) => {
         body: JSON.stringify({ answer }),
     });
 }
+
+export const getStudentFeedbackQueries = async ({ studentId }) => apiFetch(`/api/students/${studentId}/feedback-queries`);

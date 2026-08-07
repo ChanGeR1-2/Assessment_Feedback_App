@@ -90,18 +90,21 @@ const StudentFeedbackSection = ({ feedback }) => {
                     <Title order={2}>Feedback</Title>
                     {formattedDate && <Text size="sm" c="dimmed">Given on {formattedDate}</Text>}
                 </div>
-                <RingProgress
-                    size={100}
-                    thickness={9}
-                    roundCaps
-                    sections={[{ value: percentage, color }]}
-                    label={
-                        <Stack gap={0} align="center">
-                            <Text fw={700} size="lg" lh={1}>{feedback.mark}</Text>
-                            <Text size="xs" c="dimmed">/ {feedback.totalMark}</Text>
-                        </Stack>
-                    }
-                />
+                <Stack gap={4} align="center">
+                    <RingProgress
+                        size={100}
+                        thickness={9}
+                        roundCaps
+                        sections={[{ value: percentage, color }]}
+                        label={
+                            <Stack gap={0} align="center">
+                                <Text fw={700} size="lg" lh={1}>{feedback.mark}</Text>
+                                <Text size="xs" c="dimmed">/ {feedback.totalMark}</Text>
+                            </Stack>
+                        }
+                    />
+                    <Text size="sm" fw={600} c={color}>{percentage}%</Text>
+                </Stack>
             </Group>
 
             <Paper withBorder p="md" radius="md" bg="var(--mantine-color-gray-0)">

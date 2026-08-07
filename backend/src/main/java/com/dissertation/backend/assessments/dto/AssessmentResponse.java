@@ -10,6 +10,7 @@ public record AssessmentResponse(
         Long moduleId,
         String moduleTitle,
         List<MarkingItemResponse> markingItems,
-        Integer totalMark
+        Integer totalMark,
+        Short weight
 ) {
 }
