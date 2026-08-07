@@ -23,17 +23,17 @@ const AnswerForm = ({ query, onSuccess }) => {
     }, [query.feedbackId]);
 
     const form = useForm({
-        initialValues: { response: "" },
+        initialValues: { answer: "" },
         validate: {
-            response: (v) => (v.trim().length >= 3 ? null : "Please enter a response of at least 3 characters"),
+            answer: (v) => (v.trim().length >= 3 ? null : "Please enter an answer of at least 3 characters"),
         },
     });
 
     const handleSubmit = async (values) => {
         setSubmitting(true);
         try {
-            await answerFeedbackQuery({ feedbackQueryId: query.id, response: values.response });
-            notifications.show({ title: "Response sent", message: "The student can now see your response.", color: "green" });
+            await answerFeedbackQuery({ feedbackQueryId: query.id, answer: values.answer });
+            notifications.show({ title: "Answer sent", message: "The student can now see your answer.", color: "green" });
             onSuccess(query.id);
         } catch (e) {
             if (e.fieldErrors) { form.setErrors(e.fieldErrors); return; }
@@ -62,16 +62,16 @@ const AnswerForm = ({ query, onSuccess }) => {
                         <Text style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{query.query}</Text>
                     </div>
                     <Textarea
-                        label="Your response"
+                        label="Your Answer"
                         placeholder="Answer the student's question..."
                         autosize
                         minRows={4}
                         maxRows={12}
                         required
-                        key={form.key("response")}
-                        {...form.getInputProps("response")}
+                        key={form.key("answer")}
+                        {...form.getInputProps("answer")}
                     />
-                    <Button type="submit" loading={submitting}>Send response</Button>
+                    <Button type="submit" loading={submitting}>Send answer</Button>
                 </Stack>
             </form>
         </Stack>
