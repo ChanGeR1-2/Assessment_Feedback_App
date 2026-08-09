@@ -2,11 +2,12 @@ import { useParams } from "react-router";
 import { useEffect, useState } from "react";
 import { getFeedbackByStudentIdAndAssessmentId } from "../api/feedbackApi.js";
 import { notifications } from "@mantine/notifications";
-import { Group, Loader, Text } from "@mantine/core";
-import StudentFeedbackSection from "../components/StudentFeedbackSection.jsx";
+import {Group, Loader, Stack, Text} from "@mantine/core";
 import CreateFeedbackForm from "../components/CreateFeedbackForm.jsx";
 import { getAssessmentById } from "../api/assessmentsApi.js";
 import { getUserById } from "../api/usersApi.js";
+import FeedbackDetail from "../components/FeedbackDetail.jsx";
+import {LecturerFeedbackBreadcrumbs} from "../components/FeedbackBreadcrumbs.jsx";
 
 const LecturerFeedbackPage = () => {
     const { assessmentId, studentId } = useParams();
@@ -70,7 +71,12 @@ const LecturerFeedbackPage = () => {
     }
 
     if (feedback?.status === "PUBLISHED") {
-        return <StudentFeedbackSection feedback={feedback} />;
+        return (
+            <Stack gap="lg">
+                <LecturerFeedbackBreadcrumbs feedback={feedback} />
+                <FeedbackDetail feedback={feedback} />
+            </Stack>
+        )
     }
 
     if (markingItems.length === 0) {

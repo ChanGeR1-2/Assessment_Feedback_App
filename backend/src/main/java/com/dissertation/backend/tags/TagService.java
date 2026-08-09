@@ -37,8 +37,8 @@ public class TagService {
     }
 
     @Transactional(readOnly = true)
-    public List<TagCountResponse> getLecturerTagCounts(Long lecturerId) {
-        return feedbackTagRepository.findTagCountsByLecturer(lecturerId);
+    public List<TagCountResponse> getLecturerTagCounts(Long lecturerId, Long moduleId) {
+        return feedbackTagRepository.findTagCountsByLecturer(lecturerId, moduleId);
     }
 
 }

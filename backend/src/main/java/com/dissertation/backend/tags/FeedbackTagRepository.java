@@ -19,7 +19,9 @@ public interface FeedbackTagRepository extends JpaRepository<FeedbackTag, Long> 
     @Query("SELECT new com.dissertation.backend.tags.dto.TagCountResponse(t.name, ft.tagType, COUNT(ft)) " +
             "FROM FeedbackTag ft JOIN ft.tag t JOIN ft.feedback f " +
             "WHERE f.lecturer.id = :lecturerId " +
+            "AND (:moduleId IS NULL OR f.assessment.module.id = :moduleId) " +
             "GROUP BY t.name, ft.tagType " +
             "ORDER BY COUNT(ft) DESC")
-    List<TagCountResponse> findTagCountsByLecturer(@Param("lecturerId") Long lecturerId);
+    List<TagCountResponse> findTagCountsByLecturer(@Param("lecturerId") Long lecturerId,
+                                                   @Param("moduleId") Long moduleId);
 }

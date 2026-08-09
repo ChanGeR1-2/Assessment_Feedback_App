@@ -57,7 +57,7 @@ const StudentDashboard = () => {
     const sorted = [...feedback].sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
     );
-    const recent = sorted.slice(0, 3);
+    const recent = sorted.slice(0, 4);
     const newCount = feedback.filter(isNew).length;
 
     const average = feedback.length

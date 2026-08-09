@@ -5,10 +5,7 @@ import com.dissertation.backend.tags.dto.TagCountResponse;
 import com.dissertation.backend.tags.dto.TagResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -32,7 +29,7 @@ public class TagController {
     }
 
     @GetMapping("/lecturer/tag-summary")
-    public List<TagCountResponse> lecturerSummary(@AuthenticationPrincipal AppUserDetails principal) {
-        return tagService.getLecturerTagCounts(principal.getId());
+    public List<TagCountResponse> lecturerSummary(@AuthenticationPrincipal AppUserDetails principal, @RequestParam(required = false) Long moduleId) {
+        return tagService.getLecturerTagCounts(principal.getId(), moduleId);
     }
 }

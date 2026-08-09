@@ -2,8 +2,10 @@ import {useParams} from "react-router";
 import {useEffect, useState} from "react";
 import {getFeedbackById} from "../api/feedbackApi.js";
 import {notifications} from "@mantine/notifications";
-import {Group, Loader, Title} from "@mantine/core";
-import StudentFeedbackSection from "../components/StudentFeedbackSection.jsx";
+import {Group, Loader, Stack, Title} from "@mantine/core";
+import FeedbackQuerySection from "../components/FeedbackQuerySection.jsx";
+import {StudentFeedbackBreadcrumbs} from "../components/FeedbackBreadcrumbs.jsx";
+import FeedbackDetail from "../components/FeedbackDetail.jsx";
 
 const StudentFeedbackPage = () => {
     const {id} = useParams();
@@ -54,7 +56,11 @@ const StudentFeedbackPage = () => {
         )
     }
     return (
-        <StudentFeedbackSection feedback={feedback} />
+        <Stack gap="lg">
+            <StudentFeedbackBreadcrumbs feedback={feedback} />
+            <FeedbackDetail feedback={feedback} />
+            <FeedbackQuerySection feedbackId={feedback.id} />
+        </Stack>
     )
 }
 export default StudentFeedbackPage;

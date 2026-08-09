@@ -4,7 +4,7 @@ import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { answerFeedbackQuery } from "../api/feedbackApi.js";
 import { getFeedbackById } from "../api/feedbackApi.js";
-import StudentFeedbackSection from "./StudentFeedbackSection.jsx";
+import FeedbackDetail from "./FeedbackDetail.jsx";
 
 const AnswerForm = ({ query, onSuccess }) => {
     const [submitting, setSubmitting] = useState(false);
@@ -48,7 +48,7 @@ const AnswerForm = ({ query, onSuccess }) => {
             {feedbackLoading ? (
                 <Group justify="center" p="md"><Loader size="sm" /></Group>
             ) : feedback ? (
-                <StudentFeedbackSection feedback={feedback} />
+                <FeedbackDetail feedback={feedback} />
             ) : (
                 <Text c="dimmed" size="sm">Feedback couldn't be loaded.</Text>
             )}

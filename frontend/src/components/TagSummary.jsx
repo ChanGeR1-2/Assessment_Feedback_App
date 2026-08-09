@@ -1,8 +1,8 @@
 import {Group, Paper, Progress, Stack, Text} from "@mantine/core";
 
-export const TagSummary = ({ counts, title, emptyMessage }) => {
-    const strengths = counts.filter((c) => c.tagType === "STRENGTH");
-    const improvements = counts.filter((c) => c.tagType === "IMPROVEMENT");
+export const TagSummary = ({ counts, title, emptyMessage, limit = 3 }) => {
+    const strengths = counts.filter((c) => c.tagType === "STRENGTH").slice(0, limit);
+    const improvements = counts.filter((c) => c.tagType === "IMPROVEMENT").slice(0, limit);
     const max = Math.max(1, ...counts.map((c) => c.count));
 
     if (counts.length === 0) {
@@ -34,7 +34,7 @@ export const TagSummary = ({ counts, title, emptyMessage }) => {
 
     return (
         <Paper withBorder radius="md" p="md">
-            <Text fw={600} mb="md">{title}</Text>
+            {title && <Text size="sm" c="dimmed">{title}</Text>}
             <Group align="flex-start" gap="xl" grow>
                 {column(strengths, "Strengths", "teal")}
                 {column(improvements, "Areas to work on", "orange")}

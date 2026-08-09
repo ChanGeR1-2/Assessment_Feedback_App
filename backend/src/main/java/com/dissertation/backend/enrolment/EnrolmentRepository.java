@@ -23,4 +23,5 @@ public interface EnrolmentRepository extends JpaRepository<Enrolment, Long> {
             "AND (:moduleId IS NULL OR m.id = :moduleId)")
     List<Enrolment> findByLecturerId(@Param("lecturerId") Long lecturerId,
                                      @Param("moduleId") Long moduleId);
+    Long countByModuleId(Long moduleId);
 }

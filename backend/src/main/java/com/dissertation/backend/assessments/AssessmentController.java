@@ -22,6 +22,11 @@ public class AssessmentController {
         return ResponseEntity.ok(assessmentService.getAllAssessments(principal));
     }
 
+    @GetMapping("/api/assessments/stats")
+    public ResponseEntity<List<AssessmentStatsResponse>> getAssessmentStats(@AuthenticationPrincipal AppUserDetails principal) {
+        return ResponseEntity.ok(assessmentService.getAllAssessmentStatsByLecturer(principal));
+    }
+
     @GetMapping("/api/assessments/{id}")
     public ResponseEntity<AssessmentResponse> getAssessment(@PathVariable Long id, @AuthenticationPrincipal AppUserDetails principal) {
         return ResponseEntity.ok(assessmentService.getAssessment(id, principal));

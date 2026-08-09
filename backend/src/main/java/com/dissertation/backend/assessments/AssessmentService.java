@@ -7,9 +7,9 @@ import com.dissertation.backend.common.exceptions.ForbiddenException;
 import com.dissertation.backend.config.AppUserDetails;
 import com.dissertation.backend.course_modules.CourseModule;
 import com.dissertation.backend.course_modules.ModuleRepository;
-import com.dissertation.backend.course_modules.exceptions.ModuleNotFoundException;
 import com.dissertation.backend.enrolment.EnrolmentRepository;
 import com.dissertation.backend.feedback.FeedbackRepository;
+import com.dissertation.backend.feedback.FeedbackStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -182,6 +182,13 @@ public class AssessmentService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public List<AssessmentStatsResponse> getAllAssessmentStatsByLecturer(AppUserDetails principal) {
+        return assessmentRepository.findByLecturerId(principal.getId()).stream()
+                .map(assessment -> getAssessmentStats(assessment, principal.getId()))
+                .toList();
+    }
+
     private boolean isRubricLocked(Long assessmentId) {
         return feedbackRepository.existsByAssessmentId(assessmentId);
     }
@@ -196,5 +203,13 @@ public class AssessmentService {
 
     private MarkingItemResponse markingItemToResponse(MarkingItem markingItem, Long assessmentId) {
         return new MarkingItemResponse(markingItem.getId(), assessmentId, markingItem.getName(), markingItem.getMaxMark(), markingItem.getPosition());
+    }
+
+    private AssessmentStatsResponse getAssessmentStats(Assessment assessment, Long lecturerId) {
+        Long enrolled = enrolmentRepository.countByModuleId(assessment.getModule().getId());
+        Long published = feedbackRepository.countByLecturerIdAndAssessmentIdAndStatus(lecturerId, assessment.getId(), FeedbackStatus.PUBLISHED);
+        Long drafts = feedbackRepository.countByLecturerIdAndAssessmentIdAndStatus(lecturerId, assessment.getId(), FeedbackStatus.DRAFT);
+        Long todo = enrolled - published - drafts;
+        return new AssessmentStatsResponse(assessment.getId(), enrolled, drafts, published, todo);
     }
 }

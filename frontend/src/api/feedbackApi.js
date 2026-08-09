@@ -13,7 +13,6 @@ export async function getFeedbackByStudentId ({studentId}){
 }
 
 export async function submitFeedback ({feedback, publish}){
-    console.log("publish:", publish)
     const params = new URLSearchParams();
     params.append("publish", publish);
     const query = params.toString();

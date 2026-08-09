@@ -37,3 +37,5 @@ export const deleteMarkingItem = async ({assessmentId, markingItemId}) => {
         method: "DELETE",
     });
 };
+
+export const getAllAssessmentStats = async () => apiFetch(`/api/assessments/stats`);

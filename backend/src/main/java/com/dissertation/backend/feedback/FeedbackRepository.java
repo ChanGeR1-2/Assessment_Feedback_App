@@ -52,6 +52,9 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
             "LEFT JOIN FETCH ft.tag " +
             "WHERE f.assessment.id = :assessmentId AND f.student.id = :studentId")
     Optional<Feedback> findByAssessmentIdAndStudentId(@Param("assessmentId") Long assessmentId, @Param("studentId") Long studentId);
+    Long countByLecturerIdAndStatus(Long lecturerId, FeedbackStatus status);
+    Long countByLecturerIdAndAssessmentIdAndStatus(Long lecturerId, Long assessmentId, FeedbackStatus status);
+    Long countByAssessmentId(Long assessmentId);
     boolean existsByAssessmentIdAndStudentId(Long assessmentId, Long studentId);
     boolean existsByAssessmentId(Long assessmentId);
 }
