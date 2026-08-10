@@ -18,6 +18,9 @@ import java.nio.file.Paths;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Manages the storage and retrieval of feedback audio files.
+ */
 @Service
 public class AudioStorageService {
 
@@ -35,6 +38,13 @@ public class AudioStorageService {
         Files.createDirectories(storageRoot);
     }
 
+    /**
+     * Stores the audio file and returns the filename.
+     * @param file the audio file
+     * @return the filename
+     * @throws InvalidAudioException if the file is empty, exceeds 10 MB, or is not an allowed audio format.
+     * @throws AudioStorageException if there is an error storing the file.
+     */
     public String store(MultipartFile file) {
         if (file.isEmpty()) throw new InvalidAudioException("File is empty");
         if (file.getSize() > MAX_BYTES) throw new InvalidAudioException("File exceeds 10 MB");
@@ -55,6 +65,13 @@ public class AudioStorageService {
         }
     }
 
+    /**
+     * Loads the audio file from the storage.
+     * @param filename the filename
+     * @return the audio file
+     * @throws AudioNotFoundException if the file does not exist.
+     * @throws InvalidAudioException if the filename is invalid.
+     */
     public Resource load(String filename) {
         try {
             Path file = storageRoot.resolve(filename).normalize();

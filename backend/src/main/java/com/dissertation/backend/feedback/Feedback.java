@@ -6,11 +6,17 @@ import com.dissertation.backend.tags.FeedbackTag;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
+/**
+ * Represents a feedback submission by a student for an assessment.
+ *
+ * <p> Feedback is immutable once it has been published.
+ *
+ * <p> Marking items and tags are stored as sets rather than lists, to avoid
+ * MultipleBagFetchException and duplicate rows from the cartesian product when both collections are fetch-joined
+ */
 @Entity
 @Table(
         name = "feedback",

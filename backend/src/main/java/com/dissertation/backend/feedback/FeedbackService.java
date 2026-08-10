@@ -32,6 +32,21 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Manages the recording, retrieval and publication of assessment feedback.
+ *
+ * <p>Authorisation is enforced here rather than in the controller, since access
+ * depends on the data: a lecturer may only see feedback they authored, and a
+ * student only their own. Draft feedback is invisible to students — reads by a
+ * student return {@link FeedbackNotFoundException} rather than a forbidden
+ * response, so that the existence of unpublished feedback is not disclosed.
+ *
+ * <p>Feedback must cover an assessment's marking scheme exactly: every marking
+ * item, once each. The overall mark is derived from the awarded item marks
+ * rather than supplied by the caller, so the total can never disagree with the
+ * breakdown. Feedback is editable only while in {@link FeedbackStatus#DRAFT};
+ * publishing is one-way.
+ */
 @Service
 public class FeedbackService {
     private final FeedbackRepository feedbackRepository;
@@ -49,12 +64,17 @@ public class FeedbackService {
         this.tagRepository = tagRepository;
     }
 
+    /**
+     * Converts a feedback to a response object.
+     * @param feedback the feedback to convert
+     * @return the feedback response.
+     */
     private FeedbackResponse toResponse(Feedback feedback) {
         AppUser lecturer = feedback.getLecturer();
         Assessment assessment = feedback.getAssessment();
 
         List<FeedbackItemResponse> itemResponses = feedback.getItems().stream()
-                .sorted(Comparator.comparing(i -> i.getMarkingItem().getPosition()))
+                .sorted(Comparator.comparing(i -> i.getMarkingItem().getPosition())) // sort by position for frontend
                 .map(item -> new FeedbackItemResponse(
                         item.getId(),
                         feedback.getId(),
@@ -98,6 +118,15 @@ public class FeedbackService {
         );
     }
 
+    /**
+     * Gets all feedback for a student.
+     * @param studentId the student id
+     * @param userDetails the user details - taken from the security context.
+     * @return a list of feedback responses.
+     * @throws ForbiddenException if the user is not authorised to view the feedback.
+     * @throws UserNotFoundException if the student does not exist.
+     * @throws InvalidRoleException if the user is not a student.
+     */
     @Transactional(readOnly = true)
     public List<FeedbackResponse> getFeedbackByStudentId(Long studentId, AppUserDetails userDetails) {
         if (userDetails.getRole() == UserRole.STUDENT
@@ -111,12 +140,22 @@ public class FeedbackService {
             throw new InvalidRoleException(student.getId(), UserRole.STUDENT);
         }
 
+        // Only finds published feedbacks as students shouldn't be able to see drafts.
         List<Feedback> feedbacks = feedbackRepository.findByStudentId(studentId, FeedbackStatus.PUBLISHED);
         return feedbacks.stream()
                 .map(this::toResponse)
                 .toList();
     }
 
+    /**
+     * Gets feedback by id
+     * @param feedbackId the feedback id
+     * @param userDetails the user details - taken from the security context.
+     * @return the feedback response.
+     * @throws ForbiddenException if the user is not authorised to view the feedback.
+     * A lecturer must be the author of the feedback, and a student must be the recipient of the feedback.
+     * @throws FeedbackNotFoundException if the feedback does not exist or if the user is a student and the feedback is not published.
+     */
     @Transactional(readOnly = true)
     public FeedbackResponse getFeedbackById(Long feedbackId, AppUserDetails userDetails) {
         Feedback feedback = feedbackRepository.findByIdWithDetails(feedbackId)
@@ -142,6 +181,14 @@ public class FeedbackService {
         return toResponse(feedback);
     }
 
+    /**
+     * Gets feedback by assessment id and student id.
+     * @param studentId the student id
+     * @param assessmentId the assessment id
+     * @param userDetails the user details - taken from the security context.
+     * @return the feedback response - optional so the controller can respond with null instead of a 404.
+     * @throws ForbiddenException if the user is not authorised to view the feedback - they must be the lecturer of the assessment.
+     */
     @Transactional(readOnly = true)
     public Optional<FeedbackResponse> getFeedbackByAssessmentIdAndStudentId(Long studentId, Long assessmentId, AppUserDetails userDetails) {
         Optional<Feedback> feedback = feedbackRepository.findByAssessmentIdAndStudentId(assessmentId, studentId);
@@ -153,6 +200,14 @@ public class FeedbackService {
         return feedback.map(this::toResponse);
     }
 
+    /**
+     * Gets feedback by assessment id
+     * @param assessmentId the assessment id
+     * @param userDetails the user details - taken from the security context.
+     * @return a list of feedback responses.
+     * @throws ForbiddenException if the user is not authorised to view the feedback - they must be the lecturer of the assessment.
+     * @throws AssessmentNotFoundException if the assessment does not exist.
+     */
     @Transactional(readOnly = true)
     public List<FeedbackResponse> getFeedbackByAssessmentId(Long assessmentId, AppUserDetails userDetails) {
         Assessment assessment = assessmentRepository.findById(assessmentId)
@@ -166,6 +221,14 @@ public class FeedbackService {
                 .toList();
     }
 
+    /**
+     * Publish feedback without editing it.
+     * @param feedbackId the feedback id
+     * @param lecturerId the lecturer id
+     * @return the feedback response.
+     * @throws ForbiddenException if the user is not authorised to publish the feedback.
+     * @throws FeedbackNotFoundException if the feedback does not exist.
+     */
     @Transactional
     public FeedbackResponse publishFeedback(Long feedbackId, Long lecturerId) {
         Feedback feedback = feedbackRepository.findByIdWithDetails(feedbackId)
@@ -179,6 +242,24 @@ public class FeedbackService {
         return toResponse(feedback);
     }
 
+    /**
+     * Save feedback.
+     * @param createFeedbackRequest the feedback request
+     * @param lecturerId the lecturer id
+     * @param publish whether to publish the feedback immediately
+     * @return the feedback response.
+     * @throws ForbiddenException if the user is not authorised to submit feedback for the module.
+     * @throws UserNotFoundException if the student or lecturer does not exist.
+     * @throws InvalidRoleException if the user is not a lecturer.
+     * @throws AssessmentNotFoundException if the assessment does not exist.
+     * @throws StudentNotEnrolledException if the student is not enrolled in the module.
+     * @throws FeedbackExistsException if the student has already submitted feedback for the assessment.
+     * @throws DuplicateTagException if the feedback contains duplicate tags.
+     * @throws TagNotFoundException if one or more tags do not exist. i.e. Not in the database - only existing tags can be used as feedback tags.
+     * @throws DuplicateMarkingItemException if the feedback contains duplicate marking items.
+     * @throws IncompleteFeedbackException if the feedback does not cover all assessment items.
+     * @throws InvalidMarkException if the mark is greater than the maximum mark for the marking item.
+     */
     @Transactional
     public FeedbackResponse saveFeedback(CreateFeedbackRequest createFeedbackRequest, Long lecturerId, boolean publish) {
         AppUser student = userRepository.findAppUserById(createFeedbackRequest.studentId())
@@ -213,7 +294,7 @@ public class FeedbackService {
             throw new StudentNotEnrolledException(student.getId(), module.getId());
         }
 
-        Feedback feedback = new Feedback(student, lecturer, assessment, (short) 0,
+        Feedback feedback = new Feedback(student, lecturer, assessment, (short) 0, // initial mark is 0
                 createFeedbackRequest.summary());
 
         feedback.setMark(validateAndBuildItems(feedback, assessment, createFeedbackRequest.items()));
@@ -224,6 +305,17 @@ public class FeedbackService {
         return toResponse(feedbackRepository.save(feedback));
     }
 
+    /**
+     * Update feedback.
+     * @param feedbackId the feedback id
+     * @param request the feedback request
+     * @param lecturerId the lecturer id
+     * @param publish whether to publish the feedback immediately
+     * @return the feedback response.
+     * @throws ForbiddenException if the user is not authorised to edit the feedback.
+     * @throws FeedbackNotFoundException if the feedback does not exist.
+     * @throws FeedbackNotEditableException if the feedback is not in draft status.
+     */
     @Transactional
     public FeedbackResponse updateFeedback(Long feedbackId, CreateFeedbackRequest request, Long lecturerId, boolean publish) {
         Feedback feedback = feedbackRepository.findByIdWithDetails(feedbackId)
@@ -247,6 +339,13 @@ public class FeedbackService {
         return toResponse(feedback);
     }
 
+    /**
+     * Takes feedback and the tags request, validates the tags and attaches them to the feedback.
+     * @param feedback the feedback to attach the tags to
+     * @param tags the tags request
+     * @throws DuplicateTagException if the tags contain duplicate tags.
+     * @throws TagNotFoundException if one or more tags do not exist. i.e. Not in the database - only existing tags can be used as feedback tags.
+     */
     private void validateAndBuildTags(Feedback feedback, List<CreateFeedbackTagRequest> tags) {
         Set<Long> tagIds = tags.stream()
                 .map(CreateFeedbackTagRequest::tagId)
@@ -263,13 +362,23 @@ public class FeedbackService {
             throw new TagNotFoundException("One or more tags do not exist.");
         }
 
-        feedback.getTags().clear();
-        feedbackRepository.flush();
+        feedback.getTags().clear(); // clear any existing tags and repopulate with new ones
+        feedbackRepository.flush(); // prevent transient unique-constraint violation
         for (CreateFeedbackTagRequest tag : tags) {
             feedback.addTag(new FeedbackTag(tagsById.get(tag.tagId()), feedback, tag.tagType()));
         }
     }
 
+    /**
+     * Validates the feedback items and attaches them to the feedback.
+     * @param feedback the feedback to attach the items to
+     * @param assessment the assessment the feedback is for
+     * @param items the feedback items request
+     * @return the total mark of the feedback
+     * @throws DuplicateMarkingItemException if the feedback contains duplicate marking items.
+     * @throws IncompleteFeedbackException if the feedback does not cover all assessment items.
+     * @throws InvalidMarkException if the mark is greater than the maximum mark for the marking item.
+     */
     private short validateAndBuildItems(Feedback feedback, Assessment assessment,
                                         List<CreateFeedbackItemRequest> items) {
         Map<Long, MarkingItem> markingItems = markingItemRepository
@@ -286,8 +395,8 @@ public class FeedbackService {
             throw new IncompleteFeedbackException("Submitted feedback does not cover all assessment items.");
         }
 
-        feedback.getItems().clear();
-        feedbackRepository.flush();
+        feedback.getItems().clear(); // clear any existing items and repopulate with new ones
+        feedbackRepository.flush(); // prevent transient unique-constraint violation
         short total = 0;
         for (CreateFeedbackItemRequest item : items) {
             MarkingItem markingItem = markingItems.get(item.markingItemId());

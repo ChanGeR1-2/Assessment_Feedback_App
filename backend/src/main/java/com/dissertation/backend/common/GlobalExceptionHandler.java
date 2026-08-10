@@ -2,10 +2,7 @@ package com.dissertation.backend.common;
 
 import com.dissertation.backend.app_users.exceptions.EmailExistsException;
 import com.dissertation.backend.app_users.exceptions.UserNotFoundException;
-import com.dissertation.backend.assessments.exceptions.AssessmentNotFoundException;
-import com.dissertation.backend.assessments.exceptions.InvalidModuleException;
-import com.dissertation.backend.assessments.exceptions.MarkingItemNotFoundException;
-import com.dissertation.backend.assessments.exceptions.RubricLockedException;
+import com.dissertation.backend.assessments.exceptions.*;
 import com.dissertation.backend.auth.exceptions.InvalidPasswordException;
 import com.dissertation.backend.common.exceptions.ForbiddenException;
 import com.dissertation.backend.common.exceptions.InvalidRoleException;
@@ -88,6 +85,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return messageResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(MarkingItemNotForAssessmentException.class)
+    public ResponseEntity<Map<String, String>> handleMarkingItemNotForAssessment(
+            MarkingItemNotForAssessmentException ex) {
+        return messageResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
     // --- Conflicts (409) ---
 
     @ExceptionHandler(EmailExistsException.class)
@@ -152,12 +155,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(InvalidMarkException.class)
     public ResponseEntity<Map<String, String>> handleInvalidMark(InvalidMarkException ex) {
-        return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(MarkingItemNotForAssessmentException.class)
-    public ResponseEntity<Map<String, String>> handleMarkingItemNotForAssessment(
-            MarkingItemNotForAssessmentException ex) {
         return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
