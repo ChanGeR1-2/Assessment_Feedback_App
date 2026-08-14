@@ -3,6 +3,7 @@ package com.dissertation.backend.tags;
 import com.dissertation.backend.config.AppUserDetails;
 import com.dissertation.backend.tags.dto.TagCountResponse;
 import com.dissertation.backend.tags.dto.TagResponse;
+import com.dissertation.backend.tags.dto.YearTagCountResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +27,12 @@ public class TagController {
     public List<TagCountResponse> studentSummary(@PathVariable Long studentId,
                                                  @AuthenticationPrincipal AppUserDetails principal) {
         return tagService.getStudentTagCounts(studentId, principal);
+    }
+
+    @GetMapping("/students/{studentId}/tag-summary/per-year")
+    public List<YearTagCountResponse> studentSummaryByYear(@PathVariable Long studentId,
+                                                           @AuthenticationPrincipal AppUserDetails principal) {
+        return tagService.getStudentYearTagCounts(studentId, principal);
     }
 
     @GetMapping("/lecturer/tag-summary")

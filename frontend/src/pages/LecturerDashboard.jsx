@@ -67,18 +67,34 @@ const LecturerDashboard = () => {
         return () => { cancelled = true; };
     }, [currentUser?.id]);
 
-    const sortedAssessments = [...assessments].sort((a, b) => {
-        const aStats = a.stats ?? {};
-        const bStats = b.stats ?? {};
+    const latestYear = assessments.length
+        ? [...new Set(assessments.map((a) => a.academicYear))].sort().at(-1)
+        : null;
 
-        const outstanding = (s) => (s.todo ?? 0) + (s.drafts ?? 0);
-        const diff = outstanding(bStats) - outstanding(aStats);
+    const currentAssessments = assessments.filter((a) => a.academicYear === latestYear);
+
+    const sortedAssessments = [...currentAssessments].sort((a, b) => {
+        const outstanding = (s) => (s?.todo ?? 0) + (s?.drafts ?? 0);
+        const isOverdue = (x) =>
+            x.feedbackDueDate &&
+            new Date(x.feedbackDueDate) < new Date() &&
+            outstanding(x.stats) > 0;
+
+        const overdueDiff = Number(isOverdue(b)) - Number(isOverdue(a));
+        if (overdueDiff !== 0) return overdueDiff;
+
+        const diff = outstanding(b.stats) - outstanding(a.stats);
         if (diff !== 0) return diff;
 
-        return new Date(a.dueDate) - new Date(b.dueDate);
+        return new Date(a.feedbackDueDate) - new Date(b.feedbackDueDate);
     });
 
-    const totalOutstanding = assessments.reduce(
+    const sortedModules = [...modules].sort((a, b) => {
+        const yearDiff = b.academicYear.localeCompare(a.academicYear);
+        return yearDiff !== 0 ? yearDiff : a.code.localeCompare(b.code);
+    });
+
+    const totalOutstanding = currentAssessments.reduce(
         (sum, a) => sum + (a.stats?.todo ?? 0) + (a.stats?.drafts ?? 0), 0
     );
 
@@ -94,7 +110,7 @@ const LecturerDashboard = () => {
 
             <Grid gutter="lg">
                 <Grid.Col span={{base: 12, md: 7}}>
-                    <Title order={4}>Marking Progress</Title>
+                    <Title order={4}>Marking Progress - {latestYear}</Title>
                     <Text size="sm" c="dimmed" mb="xs">
                         {totalOutstanding === 0
                             ? "All marking up to date"
@@ -102,8 +118,8 @@ const LecturerDashboard = () => {
                     </Text>
 
                     <Paper withBorder radius="md" style={{overflow: "hidden"}}>
-                        {assessments.length === 0 ? (
-                            <Text p="md" c="dimmed">No assessments yet.</Text>
+                        {sortedAssessments.length === 0 ? (
+                            <Text p="md" c="dimmed">No assessments this year.</Text>
                         ) : (
                             <ScrollArea.Autosize mah={400}>
                                 <Table highlightOnHover verticalSpacing="sm">
@@ -114,6 +130,11 @@ const LecturerDashboard = () => {
                                             const publishedPct = enrolled ? (stats.published / enrolled) * 100 : 0;
                                             const draftPct = enrolled ? (stats.drafts / enrolled) * 100 : 0;
                                             const complete = enrolled > 0 && stats.published === enrolled;
+                                            const outstanding = (stats.todo ?? 0) + (stats.drafts ?? 0);
+                                            const overdue =
+                                                a.feedbackDueDate &&
+                                                new Date(a.feedbackDueDate) < new Date() &&
+                                                outstanding > 0;
 
                                             return (
                                                 <Table.Tr
@@ -124,6 +145,14 @@ const LecturerDashboard = () => {
                                                     <Table.Td>
                                                         <Text fw={500} size="sm">{a.title}</Text>
                                                         <Text size="xs" c="dimmed">{a.moduleTitle}</Text>
+                                                        {a.feedbackDueDate && (
+                                                            <Text size="xs" c={overdue ? "red" : "dimmed"}>
+                                                                {overdue
+                                                                    ? "Overdue"
+                                                                    : `Due ${new Date(a.feedbackDueDate).toLocaleDateString(undefined, {
+                                                                        day: "numeric", month: "short" })}`}
+                                                            </Text>
+                                                        )}
                                                     </Table.Td>
 
                                                     <Table.Td w={160}>
@@ -164,7 +193,7 @@ const LecturerDashboard = () => {
                                     placeholder="All modules"
                                     data={[
                                         { value: "", label: "All modules" },
-                                        ...modules.map((m) => ({ value: String(m.id), label: m.code })),
+                                        ...sortedModules.map((m) => ({ value: String(m.id), label: `${m.code} (${m.academicYear})` })),
                                     ]}
                                     value={selectedModule ?? ""}
                                     onChange={(value) => setSelectedModule(value || null)}

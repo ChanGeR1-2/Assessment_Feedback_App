@@ -25,6 +25,7 @@ const Navbar = ({onNavigate}) => {
         STUDENT: [
             {to: "/student-dashboard", label: "Dashboard"},
             {to: "/my-modules", label: "My Modules"},
+            {to: "/my-progress", label: "My Progress"},
         ],
     };
     const links = linksByRole[currentUser?.role] ?? [];

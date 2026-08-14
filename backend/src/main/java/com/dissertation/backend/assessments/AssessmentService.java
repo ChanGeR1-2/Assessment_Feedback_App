@@ -57,13 +57,13 @@ public class AssessmentService {
     public List<AssessmentResponse> getAllAssessments(AppUserDetails principal) {
         return switch (principal.getRole()) {
             case ADMIN -> assessmentRepository.findAll().stream()
-                    .map(this::assessmentToResponse)
+                    .map((a) -> assessmentToResponse(a, a.getModule().getAcademicYear()))
                     .toList();
             case LECTURER -> assessmentRepository.findByLecturerId(principal.getId()).stream()
-                    .map(this::assessmentToResponse)
+                    .map((a) -> assessmentToResponse(a, a.getModule().getAcademicYear()))
                     .toList();
             case STUDENT -> assessmentRepository.findByStudentId(principal.getId()).stream()
-                    .map(this::assessmentToResponse)
+                    .map((a) -> assessmentToResponse(a, a.getModule().getAcademicYear()))
                     .toList();
         };
     }
@@ -79,7 +79,7 @@ public class AssessmentService {
     public List<AssessmentResponse> getAssessmentsByModuleId(Long moduleId, AppUserDetails principal) {
         return switch (principal.getRole()) {
             case ADMIN -> assessmentRepository.findByModuleId(moduleId).stream()
-                    .map(this::assessmentToResponse)
+                    .map((a) -> assessmentToResponse(a, a.getModule().getAcademicYear()))
                     .toList();
             case LECTURER -> {
                 moduleRepository.findById(moduleId).ifPresent((module) -> {
@@ -88,7 +88,7 @@ public class AssessmentService {
                     }
                 });
                 yield assessmentRepository.findByModuleId(moduleId).stream()
-                        .map(this::assessmentToResponse)
+                        .map((a) -> assessmentToResponse(a, a.getModule().getAcademicYear()))
                         .toList();
 
             }
@@ -97,7 +97,7 @@ public class AssessmentService {
                     throw new ForbiddenException("You are not authorised to view this module.");
                 }
                 yield assessmentRepository.findByModuleId(moduleId).stream()
-                        .map(this::assessmentToResponse)
+                        .map((a) -> assessmentToResponse(a, a.getModule().getAcademicYear()))
                         .toList();
             }
         };
@@ -115,7 +115,7 @@ public class AssessmentService {
     public AssessmentResponse getAssessment(Long id, AppUserDetails principal) {
         return switch (principal.getRole()) {
             case ADMIN -> assessmentRepository.findById(id)
-                    .map(this::assessmentToResponse)
+                    .map((a) -> assessmentToResponse(a, a.getModule().getAcademicYear()))
                     .orElseThrow(() -> new AssessmentNotFoundException(id));
             case LECTURER -> {
                 Assessment assessment = assessmentRepository.findById(id)
@@ -123,7 +123,7 @@ public class AssessmentService {
                 if (assessment.getModule().getLecturer() == null || !assessment.getModule().getLecturer().getId().equals(principal.getId())) {
                     throw new ForbiddenException("You are not authorised to view this assessment.");
                 }
-                yield assessmentToResponse(assessment);
+                yield assessmentToResponse(assessment, assessment.getModule().getAcademicYear());
             }
             case STUDENT -> {
                 Assessment assessment = assessmentRepository.findById(id)
@@ -131,7 +131,7 @@ public class AssessmentService {
                 if (!enrolmentRepository.existsByStudentIdAndModuleId(principal.getId(), assessment.getModule().getId())) {
                     throw new ForbiddenException("You are not authorised to view this assessment.");
                 }
-                yield assessmentToResponse(assessment);
+                yield assessmentToResponse(assessment, assessment.getModule().getAcademicYear());
             }
         };
     }
@@ -152,8 +152,8 @@ public class AssessmentService {
         CourseModule module = moduleRepository.findById(request.moduleId())
                 .orElseThrow(() -> new InvalidModuleException(request.moduleId()));
 
-        Assessment assessment = new Assessment(request.title(), request.dueDate(), module, request.weight());
-        return assessmentToResponse(assessmentRepository.save(assessment));
+        Assessment assessment = new Assessment(request.title(), request.dueDate(), module, request.weight(), request.feedbackDueDate());
+        return assessmentToResponse(assessmentRepository.save(assessment), module.getAcademicYear());
     }
 
     /**
@@ -302,12 +302,12 @@ public class AssessmentService {
      * @param assessment the assessment to convert
      * @return the assessment response.
      */
-    private AssessmentResponse assessmentToResponse(Assessment assessment) {
+    private AssessmentResponse assessmentToResponse(Assessment assessment, String academicYear) {
         List<MarkingItemResponse> markingItems = assessment.getMarkingItems().stream()
                 .map(item -> markingItemToResponse(item, assessment.getId()))
                 .toList();
         int totalMark = markingItems.stream().mapToInt(MarkingItemResponse::maxMark).sum();
-        return new AssessmentResponse(assessment.getId(), assessment.getTitle(), assessment.getDueDate(), assessment.getModule().getId(), assessment.getModule().getTitle(), markingItems, totalMark, assessment.getWeight());
+        return new AssessmentResponse(assessment.getId(), assessment.getTitle(), assessment.getDueDate(), assessment.getModule().getId(), assessment.getModule().getTitle(), markingItems, totalMark, assessment.getWeight(), academicYear, assessment.getFeedbackDueDate());
     }
 
     /**

@@ -14,3 +14,7 @@ export async function getLecturerTagCount({ moduleId } = {}) {
     const query = params.toString();
     return apiFetch(`/api/lecturer/tag-summary${query ? `?${query}` : ""}`);
 }
+
+export async function getStudentTagCountsByYear({studentId}) {
+    return await apiFetch(`/api/students/${studentId}/tag-summary/per-year`);
+}

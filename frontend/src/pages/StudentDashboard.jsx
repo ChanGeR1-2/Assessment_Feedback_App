@@ -60,9 +60,29 @@ const StudentDashboard = () => {
     const recent = sorted.slice(0, 4);
     const newCount = feedback.filter(isNew).length;
 
-    const average = feedback.length
-        ? Math.round(feedback.reduce((sum, f) => sum + percentageOf(f), 0) / feedback.length)
-        : null;
+    const years = [...new Set(feedback.map((f) => f.academicYear))].sort();
+    const currentYear = years.at(-1);
+    const previousYear = years.at(-2);
+
+    const currentYearFeedback = feedback.filter((f) => f.academicYear === currentYear);
+
+    const averageFor = (year) => {
+        const yearFeedback = feedback.filter((f) => f.academicYear === year);
+        return yearFeedback.length
+            ? Math.round(
+                yearFeedback.reduce(
+                    (sum, f) => sum + (f.totalMark ? (f.mark / f.totalMark) * 100 : 0), 0
+                ) / yearFeedback.length
+            )
+            : null;
+    };
+
+    const currentAverage = averageFor(currentYear);
+    const previousAverage = previousYear ? averageFor(previousYear) : null;
+    const delta =
+        currentAverage !== null && previousAverage !== null
+            ? currentAverage - previousAverage
+            : null;
 
     const markedAssessmentIds = new Set(feedback.map((f) => f.assessmentId));
     const awaiting = assessments
@@ -132,12 +152,28 @@ const StudentDashboard = () => {
 
                     <SimpleGrid cols={2} spacing="md" mt="md">
                         <Card withBorder radius="md" padding="sm">
-                            <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Feedback received</Text>
-                            <Text fw={700} size="xl">{feedback.length}</Text>
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Feedback this year</Text>
+                            <Text fw={700} size="xl">{currentYearFeedback.length}</Text>
+                            {feedback.length !== currentYearFeedback.length && (
+                                <Text size="xs" c="dimmed">{feedback.length} in total</Text>
+                            )}
                         </Card>
+
                         <Card withBorder radius="md" padding="sm">
-                            <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Average</Text>
-                            <Text fw={700} size="xl">{average !== null ? `${average}%` : "—"}</Text>
+                            <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Average this year</Text>
+                            <Group gap="xs" align="baseline">
+                                <Text fw={700} size="xl">
+                                    {currentAverage !== null ? `${currentAverage}%` : "—"}
+                                </Text>
+                                {delta !== null && delta !== 0 && (
+                                    <Badge size="sm" variant="light" color={delta > 0 ? "teal" : "red"}>
+                                        {delta > 0 ? "▲" : "▼"} {Math.abs(delta)}
+                                    </Badge>
+                                )}
+                            </Group>
+                            {previousAverage !== null && (
+                                <Text size="xs" c="dimmed">{previousAverage}% last year</Text>
+                            )}
                         </Card>
                     </SimpleGrid>
                 </Grid.Col>
@@ -161,8 +197,8 @@ const StudentDashboard = () => {
                                                     <Text size="xs" c="dimmed">{a.moduleTitle}</Text>
                                                 </div>
                                                 <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
-                                                    {a.dueDate
-                                                        ? new Date(a.dueDate).toLocaleDateString(undefined, {
+                                                    Due: {a.dueDate
+                                                        ? new Date(a.feedbackDueDate).toLocaleDateString(undefined, {
                                                             day: "numeric", month: "short" })
                                                         : "—"}
                                                 </Text>

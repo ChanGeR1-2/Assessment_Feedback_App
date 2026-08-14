@@ -6,6 +6,7 @@ import com.dissertation.backend.config.AppUserDetails;
 import com.dissertation.backend.feedback.FeedbackStatus;
 import com.dissertation.backend.tags.dto.TagCountResponse;
 import com.dissertation.backend.tags.dto.TagResponse;
+import com.dissertation.backend.tags.dto.YearTagCountResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,14 @@ public class TagService {
             throw new ForbiddenException("You are not authorised to view this summary.");
         }
         return feedbackTagRepository.findTagCountsByStudent(studentId, FeedbackStatus.PUBLISHED);
+    }
+    @Transactional(readOnly = true)
+    public List<YearTagCountResponse> getStudentYearTagCounts(Long studentId, AppUserDetails principal) {
+        if (principal.getRole() == UserRole.STUDENT
+                && !Objects.equals(principal.getId(), studentId)) {
+            throw new ForbiddenException("You are not authorised to view this summary.");
+        }
+        return feedbackTagRepository.findTagCountsByStudentOrderByYear(studentId, FeedbackStatus.PUBLISHED);
     }
 
     @Transactional(readOnly = true)

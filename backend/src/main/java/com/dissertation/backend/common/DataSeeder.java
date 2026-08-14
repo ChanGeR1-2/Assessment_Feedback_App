@@ -31,11 +31,25 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+/**
+ * Populates the database with demonstration data under the {@code dev} profile.
+ *
+ * <p>Each phase guards on its own table, so new phases can be added and re-run
+ * without wiping the database. The data is deliberately shaped rather than
+ * random: marking coverage is uneven so the lecturer dashboard shows work in
+ * progress, tags recur per student so the aggregation views surface genuine
+ * patterns, and one student carries three years of history so cross-year
+ * progress can be demonstrated.
+ */
 @Component
 public class DataSeeder {
 
     private static final String DEFAULT_PASSWORD = "password123";
+    private static final String LECTURER_EMAIL = "lecturer@dissertation.com";
+    private static final String CURRENT_YEAR = "2026/2027";
 
     private static final List<String> STUDENT_NAMES = List.of(
             "Amelia Hart", "Daniel Okafor", "Priya Raman", "Tom Wallace",
@@ -43,6 +57,17 @@ public class DataSeeder {
             "Grace Adeyemi", "Marcus Lindqvist", "Nadia Haddad", "Oliver Chen",
             "Ruth Kavanagh", "Samir Patel", "Lucy Brennan"
     );
+
+    /** Student with a multi-year history, used to demonstrate progress over time. */
+    private static final String PROGRESSION_STUDENT_NAME = "Elena Marsh";
+
+    // Tag names must match the seeded vocabulary exactly.
+    private static final String FADING_WEAKNESS = "Referencing";
+    private static final String FADING_WEAKNESS_2 = "Clarity of writing";
+    private static final String PERSISTENT_WEAKNESS = "Critical analysis";
+    private static final String GROWING_STRENGTH = "Structure";
+    private static final String GROWING_STRENGTH_2 = "Use of evidence";
+    private static final String CONSISTENT_STRENGTH = "Depth of research";
 
     private final UserRepository userRepository;
     private final ModuleRepository moduleRepository;
@@ -92,20 +117,21 @@ public class DataSeeder {
         seedMarkingItems();
         seedEnrolments(modules);
         seedFeedback();
+        seedProgressionStudent();   // before queries, so their feedback can be queried
         seedQueries();
         seedPhrases();
     }
 
-    /** Creates the admin, lecturer and students. Returns the lecturer. */
+    /** Creates the admin, lecturer, cohort and progression student. Returns the lecturer. */
     private AppUser seedUsers() {
         if (userRepository.count() > 0) {
-            return userRepository.findByEmail("lecturer@dissertation.com").orElseThrow();
+            return userRepository.findByEmail(LECTURER_EMAIL).orElseThrow();
         }
 
         String passwordHash = passwordEncoder.encode(DEFAULT_PASSWORD);
 
         AppUser admin = buildUser("admin@dissertation.com", "Admin User", UserRole.ADMIN, passwordHash);
-        AppUser lecturer = buildUser("lecturer@dissertation.com", "Rachel Doyle", UserRole.LECTURER, passwordHash);
+        AppUser lecturer = buildUser(LECTURER_EMAIL, "Rachel Doyle", UserRole.LECTURER, passwordHash);
 
         List<AppUser> users = new ArrayList<>();
         users.add(admin);
@@ -113,6 +139,8 @@ public class DataSeeder {
         for (String name : STUDENT_NAMES) {
             users.add(buildUser(emailFor(name), name, UserRole.STUDENT, passwordHash));
         }
+        users.add(buildUser(emailFor(PROGRESSION_STUDENT_NAME), PROGRESSION_STUDENT_NAME,
+                UserRole.STUDENT, passwordHash));
 
         userRepository.saveAll(users);
         return lecturer;
@@ -126,9 +154,9 @@ public class DataSeeder {
     }
 
     /**
-     * AS2 on each module uses question-style items with a non-100 total, to
-     * exercise both the unified marking-item model and variable assessment
-     * totals. The rest use typical coursework criteria.
+     * AS2 on each assessment uses question-style items totalling 80, exercising
+     * both the unified marking-item model and assessments whose total is not 100.
+     * The rest use typical coursework criteria.
      */
     private void seedMarkingItems() {
         if (markingItemRepository.count() > 0) {
@@ -156,67 +184,58 @@ public class DataSeeder {
     }
 
     /**
-     * Everyone takes the first module; two thirds also take the second, so the
-     * cohorts differ and some students build a longer feedback history.
+     * Enrols the cohort on the current year's modules only; earlier years exist
+     * solely for the progression student. Everyone takes the first module and
+     * two thirds also take the second, so the cohorts differ.
      */
     private void seedEnrolments(List<CourseModule> modules) {
         if (enrolmentRepository.count() > 0) {
             return;
         }
 
-        List<AppUser> students = userRepository.findAll().stream()
-                .filter(u -> u.getRole() == UserRole.STUDENT)
+        List<CourseModule> currentModules = modules.stream()
+                .filter(m -> CURRENT_YEAR.equals(m.getAcademicYear()))
                 .toList();
+        if (currentModules.isEmpty()) {
+            return;
+        }
 
+        List<AppUser> students = cohortStudents();
         List<Enrolment> enrolments = new ArrayList<>();
-        CourseModule primary = modules.get(0);
+        CourseModule primary = currentModules.get(0);
 
         for (int i = 0; i < students.size(); i++) {
             enrolments.add(new Enrolment(students.get(i), primary));
-            if (modules.size() > 1 && i % 3 != 2) {
-                enrolments.add(new Enrolment(students.get(i), modules.get(1)));
+            if (currentModules.size() > 1 && i % 3 != 2) {
+                enrolments.add(new Enrolment(students.get(i), currentModules.get(1)));
             }
         }
 
         enrolmentRepository.saveAll(enrolments);
     }
 
-    private String emailFor(String fullName) {
-        return fullName.toLowerCase().replace(" ", ".") + "@dissertation.com";
-    }
-
-    private AppUser buildUser(String email, String fullName, UserRole role, String passwordHash) {
-        AppUser user = new AppUser();
-        user.setEmail(email);
-        user.setFullName(fullName);
-        user.setPasswordHash(passwordHash);
-        user.setRole(role);
-        return user;
-    }
-
     /**
-     * Marking coverage is deliberately uneven so the lecturer dashboard shows
-     * work in progress: AS1 is fully marked and published, AS2 is partly marked
-     * with some drafts, AS3 is untouched.
+     * Marking coverage is deliberately uneven: AS1 is fully marked and published,
+     * AS2 is marked for two thirds of the cohort with some left as drafts, and
+     * AS3 is untouched — so the lecturer dashboard shows work in progress.
      *
-     * Each student is given a persistent weakness and strength so that the tag
-     * aggregation surfaces genuine recurring themes rather than uniform noise.
+     * <p>Each student keeps the same weakness and strength across their feedback,
+     * so the tag aggregation surfaces recurring themes rather than noise.
      */
     private void seedFeedback() {
         if (feedbackRepository.count() > 0) {
             return;
         }
 
-        AppUser lecturer = userRepository.findByEmail("lecturer@dissertation.com").orElseThrow();
+        AppUser lecturer = userRepository.findByEmail(LECTURER_EMAIL).orElseThrow();
         List<Tag> tags = tagRepository.findAll();
         if (tags.isEmpty()) {
             return;   // tag vocabulary not seeded
         }
 
-        List<Assessment> assessments = assessmentRepository.findAll();
         List<Feedback> toSave = new ArrayList<>();
 
-        for (Assessment assessment : assessments) {
+        for (Assessment assessment : assessmentRepository.findAll()) {
             if ("AS3".equals(assessment.getTitle())) {
                 continue;   // left unmarked
             }
@@ -227,21 +246,22 @@ public class DataSeeder {
                 continue;
             }
 
+            // The progression student's feedback is seeded separately, and earlier
+            // years have no cohort enrolments, so this yields the current cohort only.
             List<AppUser> cohort = enrolmentRepository.findByModuleId(assessment.getModule().getId())
-                    .stream().map(Enrolment::getStudent).toList();
+                    .stream()
+                    .map(Enrolment::getStudent)
+                    .filter(s -> !PROGRESSION_STUDENT_NAME.equals(s.getFullName()))
+                    .toList();
 
             for (int i = 0; i < cohort.size(); i++) {
-                AppUser student = cohort.get(i);
-
-                // AS2: only the first two thirds are marked, and every third of
-                // those is left as a draft.
                 boolean isSecondAssessment = "AS2".equals(assessment.getTitle());
                 if (isSecondAssessment && i >= (cohort.size() * 2) / 3) {
-                    continue;
+                    continue;   // later students not yet marked
                 }
                 boolean publish = !(isSecondAssessment && i % 3 == 0);
 
-                toSave.add(buildFeedback(student, lecturer, assessment, markingItems, tags, i, publish));
+                toSave.add(buildFeedback(cohort.get(i), lecturer, assessment, markingItems, tags, i, publish));
             }
         }
 
@@ -252,14 +272,13 @@ public class DataSeeder {
                                    List<MarkingItem> markingItems, List<Tag> tags,
                                    int studentIndex, boolean publish) {
 
-        // A stable per-student ability band (0 = struggling, 3 = strong) so a
-        // student's marks are consistent across their assessments.
+        // Stable per-student ability band (0 = struggling, 3 = strong).
         int band = studentIndex % 4;
-
         // Nudge the band up on later assessments so students visibly improve.
         int assessmentIndex = "AS2".equals(assessment.getTitle()) ? 1 : 0;
-        int variationSeed = assessment.getId().intValue();
         int effectiveBand = Math.min(3, band + assessmentIndex);
+        // Distinguishes assessments so a student's feedback differs between them.
+        int variationSeed = assessment.getId().intValue();
 
         Feedback feedback = new Feedback(student, lecturer, assessment, (short) 0,
                 SUMMARIES.get(effectiveBand));
@@ -274,8 +293,6 @@ public class DataSeeder {
         }
         feedback.setMark(total);
 
-        // Persistent themes: each student keeps hitting the same weakness and
-        // showing the same strength, so recurring patterns emerge over time.
         Tag weakness = tags.get(studentIndex % tags.size());
         Tag strength = tags.get((studentIndex + 3) % tags.size());
         if (!weakness.getId().equals(strength.getId())) {
@@ -301,18 +318,206 @@ public class DataSeeder {
         return (short) Math.round(item.getMaxMark() * ratio);
     }
 
-    private static final List<String> SUMMARIES = List.of(
-            "There is a reasonable attempt here, but the work needs more depth and clearer structure. Focus on developing your argument rather than describing the material.",
-            "A solid piece of work that meets the brief. The analysis is sound but could go further in evaluating the evidence you present.",
-            "A good piece of work with clear structure and confident use of sources. Push the critical evaluation a little further to reach the top band.",
-            "An excellent submission. The argument is well developed and the evidence is used critically throughout. Very little to fault here."
-    );
+    /**
+     * Seeds one student with three years of history so that cross-year progress
+     * can be demonstrated: marks climb each year, "Referencing" and "Clarity of
+     * writing" are progressively addressed, "Critical analysis" persists, and
+     * two strengths emerge in later years alongside one that is consistent.
+     */
+    private void seedProgressionStudent() {
+        AppUser student = userRepository.findByEmail(emailFor(PROGRESSION_STUDENT_NAME)).orElse(null);
+        if (student == null || !enrolmentRepository.findByStudentId(student.getId()).isEmpty()) {
+            return;
+        }
+
+        AppUser lecturer = userRepository.findByEmail(LECTURER_EMAIL).orElseThrow();
+        Map<String, Tag> tagsByName = tagRepository.findAll().stream()
+                .collect(Collectors.toMap(Tag::getName, t -> t));
+
+        List<CourseModule> modules = moduleRepository.findAll();
+
+        List<Enrolment> enrolments = modules.stream()
+                .map(m -> new Enrolment(student, m))
+                .toList();
+        enrolmentRepository.saveAll(enrolments);
+
+        List<Feedback> feedbacks = new ArrayList<>();
+
+        for (CourseModule module : modules) {
+            int yearIndex = switch (module.getAcademicYear()) {
+                case "2024/2025" -> 0;
+                case "2025/2026" -> 1;
+                default -> 2;
+            };
+            boolean currentYear = CURRENT_YEAR.equals(module.getAcademicYear());
+
+            for (Assessment assessment : assessmentRepository.findByModuleId(module.getId())) {
+                // AS3 of the current year is unmarked, as for everyone else
+                if (currentYear && "AS3".equals(assessment.getTitle())) {
+                    continue;
+                }
+
+                List<MarkingItem> markingItems =
+                        markingItemRepository.findByAssessmentIdOrderByPosition(assessment.getId());
+                if (markingItems.isEmpty()) {
+                    continue;
+                }
+
+                feedbacks.add(buildProgressionFeedback(
+                        student, lecturer, assessment, markingItems, tagsByName, yearIndex));
+            }
+        }
+
+        feedbackRepository.saveAll(feedbacks);
+    }
+
+    private Feedback buildProgressionFeedback(AppUser student, AppUser lecturer, Assessment assessment,
+                                              List<MarkingItem> markingItems,
+                                              Map<String, Tag> tagsByName, int yearIndex) {
+
+        // Marks climb across the three years: roughly 48% → 61% → 74%
+        double baseRatio = 0.48 + (yearIndex * 0.13);
+        int band = Math.min(3, yearIndex + 1);
+
+        Feedback feedback = new Feedback(student, lecturer, assessment, (short) 0, SUMMARIES.get(band));
+
+        short total = 0;
+        for (int j = 0; j < markingItems.size(); j++) {
+            MarkingItem item = markingItems.get(j);
+            double variation = ((j + yearIndex) % 5 - 2) * 0.04;
+            double ratio = Math.clamp(baseRatio + variation, 0.1, 1.0);
+            short awarded = (short) Math.round(item.getMaxMark() * ratio);
+
+            feedback.addItem(new FeedbackItem(feedback, item, awarded,
+                    commentFor(band, yearIndex, j, assessment.getId().intValue())));
+            total += awarded;
+        }
+        feedback.setMark(total);
+
+        // Referencing: flagged throughout year 1, occasionally in year 2, gone by year 3.
+        if (yearIndex == 0 || (yearIndex == 1 && assessment.getId() % 2 == 0)) {
+            addTagIfPresent(feedback, tagsByName, FADING_WEAKNESS, TagType.IMPROVEMENT);
+        }
+        // Clarity of writing: a year 1 issue only.
+        if (yearIndex == 0) {
+            addTagIfPresent(feedback, tagsByName, FADING_WEAKNESS_2, TagType.IMPROVEMENT);
+        }
+        // Critical analysis: never resolved.
+        addTagIfPresent(feedback, tagsByName, PERSISTENT_WEAKNESS, TagType.IMPROVEMENT);
+        // Structure: recognised from year 2.
+        if (yearIndex >= 1) {
+            addTagIfPresent(feedback, tagsByName, GROWING_STRENGTH, TagType.STRENGTH);
+        }
+        // Use of evidence: recognised from year 3.
+        if (yearIndex >= 2) {
+            addTagIfPresent(feedback, tagsByName, GROWING_STRENGTH_2, TagType.STRENGTH);
+        }
+        // Depth of research: consistent throughout.
+        addTagIfPresent(feedback, tagsByName, CONSISTENT_STRENGTH, TagType.STRENGTH);
+
+        feedback.publish();
+        return feedback;
+    }
+
+    private void addTagIfPresent(Feedback feedback, Map<String, Tag> tagsByName,
+                                 String name, TagType type) {
+        Tag tag = tagsByName.get(name);
+        if (tag != null) {
+            feedback.addTag(new FeedbackTag(tag, feedback, type));
+        }
+    }
+
+    /** Seeds a handful of student questions, two of which have been answered. */
+    private void seedQueries() {
+        if (feedbackQueryRepository.count() > 0) {
+            return;
+        }
+
+        AppUser lecturer = userRepository.findByEmail(LECTURER_EMAIL).orElseThrow();
+
+        List<Feedback> published = feedbackRepository.findAll().stream()
+                .filter(f -> f.getStatus() == FeedbackStatus.PUBLISHED)
+                .toList();
+
+        List<FeedbackQuery> queries = new ArrayList<>();
+        List<FeedbackQueryAnswer> answers = new ArrayList<>();
+
+        for (int i = 0; i < published.size() && queries.size() < 6; i++) {
+            if (i % 4 != 0) continue;   // spread them across the cohort
+
+            Feedback feedback = published.get(i);
+            FeedbackQuery query = new FeedbackQuery(
+                    QUESTIONS.get(queries.size() % QUESTIONS.size()),
+                    feedback,
+                    feedback.getStudent());
+            queries.add(query);
+
+            if (queries.size() <= 2) {
+                answers.add(new FeedbackQueryAnswer(
+                        ANSWERS.get(queries.size() - 1), query, lecturer));
+            }
+        }
+
+        feedbackQueryRepository.saveAll(queries);
+        feedbackQueryAnswerRepository.saveAll(answers);
+    }
+
+    /** Gives the lecturer a starting phrase bank so the picker is populated. */
+    private void seedPhrases() {
+        if (feedbackPhraseRepository.count() > 0) {
+            return;
+        }
+
+        AppUser lecturer = userRepository.findByEmail(LECTURER_EMAIL).orElseThrow();
+
+        feedbackPhraseRepository.saveAll(List.of(
+                new FeedbackPhrase(lecturer, "Descriptive not analytical",
+                        "This section describes the material rather than analysing it. Try explaining why the evidence matters to your argument."),
+                new FeedbackPhrase(lecturer, "Needs a source",
+                        "This claim would be stronger with a supporting reference."),
+                new FeedbackPhrase(lecturer, "Signposting",
+                        "Consider signposting your argument more explicitly in the introduction so the reader knows where you're heading."),
+                new FeedbackPhrase(lecturer, "Good use of evidence",
+                        "You engage with what your sources actually claim rather than simply citing them, which works well here."),
+                new FeedbackPhrase(lecturer, "Referencing format",
+                        "Check your citation format against the module guide — page numbers are missing in several places."),
+                new FeedbackPhrase(lecturer, "Counter-argument",
+                        "Consider what someone disagreeing with you would say, and address it directly.")
+        ));
+    }
+
+    private List<AppUser> cohortStudents() {
+        return userRepository.findAll().stream()
+                .filter(u -> u.getRole() == UserRole.STUDENT)
+                .filter(u -> !PROGRESSION_STUDENT_NAME.equals(u.getFullName()))
+                .toList();
+    }
+
+    private String emailFor(String fullName) {
+        return fullName.toLowerCase().replace(" ", ".") + "@dissertation.com";
+    }
+
+    private AppUser buildUser(String email, String fullName, UserRole role, String passwordHash) {
+        AppUser user = new AppUser();
+        user.setEmail(email);
+        user.setFullName(fullName);
+        user.setPasswordHash(passwordHash);
+        user.setRole(role);
+        return user;
+    }
 
     /** Picks a comment that varies by criterion as well as by ability band. */
     private String commentFor(int band, int studentIndex, int itemIndex, int variationSeed) {
         List<String> pool = COMMENTS_BY_BAND.get(band);
         return pool.get((studentIndex + itemIndex + variationSeed) % pool.size());
     }
+
+    private static final List<String> SUMMARIES = List.of(
+            "There is a reasonable attempt here, but the work needs more depth and clearer structure. Focus on developing your argument rather than describing the material.",
+            "A solid piece of work that meets the brief. The analysis is sound but could go further in evaluating the evidence you present.",
+            "A good piece of work with clear structure and confident use of sources. Push the critical evaluation a little further to reach the top band.",
+            "An excellent submission. The argument is well developed and the evidence is used critically throughout. Very little to fault here."
+    );
 
     private static final List<List<String>> COMMENTS_BY_BAND = List.of(
             List.of(
@@ -345,42 +550,6 @@ public class DataSeeder {
             )
     );
 
-    private void seedQueries() {
-        if (feedbackQueryRepository.count() > 0) {
-            return;
-        }
-
-        AppUser lecturer = userRepository.findByEmail("lecturer@dissertation.com").orElseThrow();
-
-        // only published feedback can be queried
-        List<Feedback> published = feedbackRepository.findAll().stream()
-                .filter(f -> f.getStatus() == FeedbackStatus.PUBLISHED)
-                .toList();
-
-        List<FeedbackQuery> queries = new ArrayList<>();
-        List<FeedbackQueryAnswer> answers = new ArrayList<>();
-
-        for (int i = 0; i < published.size() && queries.size() < 6; i++) {
-            if (i % 4 != 0) continue;   // spread them across the cohort
-
-            Feedback feedback = published.get(i);
-            FeedbackQuery query = new FeedbackQuery(
-                    QUESTIONS.get(queries.size() % QUESTIONS.size()),
-                    feedback,
-                    feedback.getStudent());
-            queries.add(query);
-
-            // answer the first two, leave the rest pending
-            if (queries.size() <= 2) {
-                answers.add(new FeedbackQueryAnswer(
-                        ANSWERS.get(queries.size() - 1), query, lecturer));
-            }
-        }
-
-        feedbackQueryRepository.saveAll(queries);
-        feedbackQueryAnswerRepository.saveAll(answers);
-    }
-
     private static final List<String> QUESTIONS = List.of(
             "Thanks for the feedback. Could you say a bit more about what you meant by pushing the evaluation further? I'm not sure what that would look like in practice.",
             "I lost more marks on referencing than I expected — is it the format I'm getting wrong, or am I not citing enough?",
@@ -394,25 +563,4 @@ public class DataSeeder {
             "Good question. At the moment you tend to present a source and move on — try adding a sentence after each one saying what it contributes to your argument, or where it falls short. That's the step that moves description into evaluation.",
             "It's mostly format — several of your in-text citations are missing page numbers, and two of the entries in your reference list don't match the citations. The volume of citation is fine."
     );
-
-    private void seedPhrases() {
-        if (feedbackPhraseRepository.count() > 0) return;
-
-        AppUser lecturer = userRepository.findByEmail("lecturer@dissertation.com").orElseThrow();
-
-        feedbackPhraseRepository.saveAll(List.of(
-                new FeedbackPhrase(lecturer, "Descriptive not analytical",
-                        "This section describes the material rather than analysing it. Try explaining why the evidence matters to your argument."),
-                new FeedbackPhrase(lecturer, "Needs a source",
-                        "This claim would be stronger with a supporting reference."),
-                new FeedbackPhrase(lecturer, "Signposting",
-                        "Consider signposting your argument more explicitly in the introduction so the reader knows where you're heading."),
-                new FeedbackPhrase(lecturer, "Good use of evidence",
-                        "You engage with what your sources actually claim rather than simply citing them, which works well here."),
-                new FeedbackPhrase(lecturer, "Referencing format",
-                        "Check your citation format against the module guide — page numbers are missing in several places."),
-                new FeedbackPhrase(lecturer, "Counter-argument",
-                        "Consider what someone disagreeing with you would say, and address it directly.")
-        ));
-    }
 }

@@ -25,16 +25,19 @@ public class Assessment {
     private List<MarkingItem> markingItems = new ArrayList<>();
     @Column(name = "weight")
     private Short weight;
+    @Column(name = "feedback_due_date")
+    private LocalDateTime feedbackDueDate;
 
     public List<MarkingItem> getMarkingItems() { return markingItems; }
 
     protected Assessment() {}
 
-    public Assessment(String title, LocalDateTime dueDate, CourseModule module, Short weight) {
+    public Assessment(String title, LocalDateTime dueDate, CourseModule module, Short weight, LocalDateTime feedbackDueDate) {
         this.title = title;
         this.dueDate = dueDate;
         this.module = module;
         this.weight = weight;
+        this.feedbackDueDate = feedbackDueDate;
     }
 
     public Long getId() {
@@ -55,6 +58,14 @@ public class Assessment {
 
     public void setDueDate(LocalDateTime dueDate) {
         this.dueDate = dueDate;
+    }
+
+    public LocalDateTime getFeedbackDueDate() {
+        return feedbackDueDate;
+    }
+
+    public void setFeedbackDueDate(LocalDateTime feedbackDueDate) {
+        this.feedbackDueDate = feedbackDueDate;
     }
 
     public CourseModule getModule() {

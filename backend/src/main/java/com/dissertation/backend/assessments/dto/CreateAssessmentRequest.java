@@ -15,6 +15,8 @@ public record CreateAssessmentRequest(
         Long moduleId,
         @NotNull(message = "Weight is required")
         @Min(value = 0, message = "Weight must be at least 0")
-        Short weight
+        Short weight,
+        @NotNull(message = "Feedback due date is required")
+        LocalDateTime feedbackDueDate
 ) {
 }

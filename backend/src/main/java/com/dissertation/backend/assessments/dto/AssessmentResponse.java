@@ -11,6 +11,8 @@ public record AssessmentResponse(
         String moduleTitle,
         List<MarkingItemResponse> markingItems,
         Integer totalMark,
-        Short weight
+        Short weight,
+        String academicYear,
+        LocalDateTime feedbackDueDate
 ) {
 }

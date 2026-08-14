@@ -32,6 +32,7 @@ CREATE TABLE assessment
     module_id BIGINT       NOT NULL,
     title     VARCHAR(255) NOT NULL,
     due_date  TIMESTAMP,
+    feedback_due_date TIMESTAMP,
     CONSTRAINT fk_assessment_module
         FOREIGN KEY (module_id)
             REFERENCES course_module (id)
