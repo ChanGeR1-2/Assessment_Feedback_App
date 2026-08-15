@@ -218,3 +218,34 @@ erDiagram
         timestamp created_at
     }
 ```
+## Project structure
+
+```
+backend/
+├── src/main/java/com/dissertation/backend/
+│   ├── app_users/         users and roles
+│   ├── assessments/       assessments and their marking schemes
+│   ├── auth/              login and token issuing
+│   ├── common/            global exception handling, demo data seeding
+│   ├── config/            security, JWT, OpenAPI
+│   ├── course_modules/    modules and lecturer assignment
+│   ├── enrolment/         student–module enrolments
+│   ├── feedback/          feedback, per-criterion items, draft/publish
+│   ├── feedback_audio/    audio recordings and filesystem storage
+│   ├── feedback_queries/  student questions and lecturer answers
+│   ├── phrases/           lecturer phrase bank
+│   └── tags/              tag vocabulary and per-feedback tagging
+└── src/main/resources/db/migration/   Flyway schema migrations
+
+frontend/src/
+├── api/           fetch wrappers per feature; utils.js holds apiFetch
+├── components/    shared UI; layout/ holds the AppShell and Navbar
+├── pages/         one per route; auth/ holds login and ProtectedRoute
+├── hooks/         the MediaRecorder hook
+└── main.jsx       router definition and providers
+```
+
+Each backend package follows the same shape: entity, repository, service,
+controller, plus `dto/` and `exceptions/` subpackages. Authorisation is
+enforced in the service layer rather than the controller, since access
+usually depends on the data — whether *this* lecturer owns *that* module.
