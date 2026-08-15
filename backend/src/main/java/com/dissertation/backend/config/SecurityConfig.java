@@ -45,13 +45,16 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/users/*").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/modules/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/enrolments/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/assessments").hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.POST, "/api/assessments/**").hasRole("LECTURER")
                         .requestMatchers(HttpMethod.PATCH, "/api/assessments/**").hasRole("LECTURER")
                         .requestMatchers(HttpMethod.DELETE, "/api/assessments/**").hasRole("LECTURER")
-
                         .requestMatchers(HttpMethod.GET, "/api/assessments/*/feedback").hasRole("LECTURER")
                         .requestMatchers(HttpMethod.GET, "/api/assessments/*/students/*/feedback").hasRole("LECTURER")
+                        .requestMatchers(HttpMethod.POST, "/api/feedback").hasRole("LECTURER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/feedback/**").hasRole("LECTURER")
+                        .requestMatchers("/api/lecturer/**").hasRole("LECTURER")
 
                         .requestMatchers("/api/phrases/**").hasRole("LECTURER")
 
