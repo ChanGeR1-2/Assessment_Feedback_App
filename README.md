@@ -74,3 +74,53 @@ erDiagram
         text comment
     }
 ```
+```mermaid
+erDiagram
+    app_user ||--o{ feedback : "receives (student)"
+    app_user ||--o{ feedback : "authors (lecturer)"
+    feedback ||--o| feedback_audio : "may have"
+    feedback ||--o{ feedback_tag : "tagged with"
+    tag ||--o{ feedback_tag : "applied via"
+    feedback ||--o| feedback_query : "may be queried by"
+    app_user ||--o{ feedback_query : "asks (student)"
+    feedback_query ||--o| feedback_query_answer : "may be answered by"
+    app_user ||--o{ feedback_query_answer : "answers (lecturer)"
+    feedback {
+        bigint id PK
+    }
+    app_user {
+        bigint id PK
+    }
+    feedback_audio {
+        bigint id PK
+        bigint feedback_id FK
+        varchar(255) filename
+        varchar(100) content_type
+        bigint size_bytes
+        timestamp created_at
+    }
+    feedback_tag {
+        bigint id PK
+        bigint feedback_id FK
+        bigint tag_id FK
+        varchar(20) tag_type 
+    }
+    tag {
+        bigint id PK
+        varchar(100) name
+    }
+    feedback_query {
+        bigint id PK
+        bigint feedback_id FK
+        bigint student_id FK
+        text query
+        timestamp created_at
+    }
+    feedback_query_answer {
+        bigint id PK
+        bigint lecturer_id FK
+        bigint feedback_query_id FK
+        text answer
+        timestamp created_at
+    }
+```
