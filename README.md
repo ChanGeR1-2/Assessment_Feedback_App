@@ -1,4 +1,64 @@
-## Assessment Feedback Application
+# Assessment Feedback Application
+
+A web application for recording and receiving structured assessment feedback. Lecturers mark student work against a per-assessment rubric, attach written and audio comments, tag recurring themes, and publish feedback when ready. Students view their feedback, ask clarifying questions, and track how their marks and feedback themes change across academic years.
+
+## Tech stack
+
+**Backend** — Java 26, Spring Boot 4.1.0, Spring Security (JWT), Spring Data JPA, Flyway, PostgreSQL 16  
+**Frontend** — React 19, Vite, Mantine, React Router  
+**Infrastructure** — Docker Compose
+
+Exact dependency versions are in `backend/pom.xml` and `frontend/package.json`.
+
+## Installation
+
+**Prerequisites:** Docker Desktop (or Docker Engine with Compose v2 or later)
+
+```bash
+git clone https://github.com/ChanGeR1-2/Assessment_Feedback_App.git
+cd Assessment_Feedback_App
+docker compose up --build
+```
+
+On startup, Postgres starts, waits for its healthcheck, the backend runs Flyway migrations and then seeds demo data, and the frontend serves on Vite.
+
+## Using the App
+
+Frontend is located at http://localhost:5173/, the backend is located at http://localhost:8080/, Postgres is exposed on port 5432 for database tooling (not browsable).
+
+The database, as well as the docker volume holding audio recordings can be wiped and reset using
+
+```bash
+docker compose down -v
+```
+
+### Demo accounts
+
+All accounts use the password `password123`.
+
+| Email | Role | Notes |
+|---|---|---|
+| `admin@dissertation.com` | Admin | Manages users: currently limited in scope |
+| `lecturer@dissertation.com` | Lecturer | Owns all modules; has marking in progress |
+| `elena.marsh@dissertation.com` | Student | Three years of history — use for the progress view |
+| `daniel.okafor@dissertation.com` | Student | Current year only |
+
+Other students follow the same pattern (`firstname.lastname@dissertation.com`).
+
+### Environment Variables
+
+Docker Compose file serves development default environment variables:
+- SPRING_PROFILES_ACTIVE: docker,dev
+- SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/assessment_feedback
+- SPRING_DATASOURCE_USERNAME: assessment_user
+- SPRING_DATASOURCE_PASSWORD: assessment_password
+- SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+- APP_JWT_SECRET: ${APP_JWT_SECRET:-dev-only-secret-change-me-at-least-32-bytes-long}
+- APP_JWT_EXPIRATION_MS: 86400000
+- APP_AUDIO_STORAGE_PATH: /app/data/audio
+- VITE_API_BASE_URL: /api
+
+APP_JWT_SECRET must be at least 32 characters long or the app won't start.
 
 ## API Documentation
 
@@ -32,6 +92,7 @@ as the lecturer role.
 ## Entity Relationship Diagrams
 
 Two entity relationship diagrams have been made using Mermaid Live Editor. The first one shows the overall schema and the second shows the omitted extensions of the feedback entity (split up to improve readability).
+
 ```mermaid
 erDiagram
     app_user |o--o{ course_module : "owns (lecturer)"
@@ -106,6 +167,7 @@ erDiagram
         text comment
     }
 ```
+
 ```mermaid
 erDiagram
     app_user ||--o{ feedback : "receives (student)"
