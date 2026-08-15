@@ -8,7 +8,7 @@ erDiagram
     app_user ||--o{ feedback : "receives (student)"
     app_user ||--o{ feedback : "authors (lecturer)"
     assessment ||--o{ feedback : "receives"
-    assessment ||--o{ marking_item : "marked against"https://github.com/ChanGeR1-2/Assessment_Feedback_App/blob/main/README.md
+    assessment ||--o{ marking_item : "marked against"
     course_module ||--o{ assessment : "contains"
     app_user ||--o{ enrolment : "enrolled via (student)"
     course_module ||--o{ enrolment : has
