@@ -16,13 +16,13 @@ import {useForm} from "@mantine/form";
 import {notifications} from "@mantine/notifications";
 import {submitFeedback, updateFeedback} from "../api/feedbackApi.js";
 import {Link} from "react-router";
-import {useAudioRecorder} from "../utils/audio.js";
+import {useAudioRecorder} from "../hooks/useAudioRecorder.js";
 import AudioPlayer from "./AudioPlayer.jsx";
 import {getMyPhrases} from "../api/phrasesApi.js";
 import PhrasePicker from "./PhrasePicker.jsx";
 import {getAllTags} from "../api/tagsApi.js";
 
-const CreateFeedbackForm = ({
+const FeedbackForm = ({
     assessmentId,
     studentId,
     onSubmit,
@@ -295,4 +295,4 @@ const CreateFeedbackForm = ({
     );
 };
 
-export default CreateFeedbackForm;
+export default FeedbackForm;

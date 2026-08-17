@@ -1,4 +1,4 @@
-package com.dissertation.backend.feedback.exceptions;
+package com.dissertation.backend.feedback_audio.exceptions;
 
 public class InvalidAudioException extends RuntimeException {
     public InvalidAudioException(String message) {

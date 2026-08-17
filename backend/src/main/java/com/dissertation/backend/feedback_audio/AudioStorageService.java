@@ -1,8 +1,8 @@
 package com.dissertation.backend.feedback_audio;
 
-import com.dissertation.backend.feedback.exceptions.AudioNotFoundException;
-import com.dissertation.backend.feedback.exceptions.AudioStorageException;
-import com.dissertation.backend.feedback.exceptions.InvalidAudioException;
+import com.dissertation.backend.feedback_audio.exceptions.AudioNotFoundException;
+import com.dissertation.backend.feedback_audio.exceptions.AudioStorageException;
+import com.dissertation.backend.feedback_audio.exceptions.InvalidAudioException;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;

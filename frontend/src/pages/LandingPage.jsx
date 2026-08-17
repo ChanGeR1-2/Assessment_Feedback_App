@@ -1,4 +1,3 @@
-import './LandingPage.css'
 import {NavLink} from "react-router";
 
 function LandingPage() {

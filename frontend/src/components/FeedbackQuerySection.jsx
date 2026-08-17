@@ -2,7 +2,7 @@ import { Button, Divider, Group, Modal, Stack, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useEffect, useState } from "react";
 import { getFeedbackQueryByFeedbackId } from "../api/feedbackApi.js";
-import CreateFeedbackQueryForm from "./CreateFeedbackQueryForm.jsx";
+import FeedbackQueryForm from "./FeedbackQueryForm.jsx";
 
 const FeedbackQuerySection = ({ feedbackId }) => {
     const [query, setQuery] = useState(null);
@@ -44,7 +44,7 @@ const FeedbackQuerySection = ({ feedbackId }) => {
             )}
 
             <Modal opened={askOpened} onClose={closeAsk} title="Ask a question" centered>
-                <CreateFeedbackQueryForm
+                <FeedbackQueryForm
                     key={feedbackId}
                     feedbackId={feedbackId}
                     onSuccess={handleCreated}

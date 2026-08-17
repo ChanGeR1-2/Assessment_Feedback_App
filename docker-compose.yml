@@ -30,11 +30,13 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       APP_JWT_SECRET: ${APP_JWT_SECRET:-dev-only-secret-change-me-at-least-32-bytes-long}
       APP_JWT_EXPIRATION_MS: 86400000
+      APP_AUDIO_STORAGE_PATH: /data/audio
     ports:
       - "8080:8080"
     volumes:
       - ./backend:/app
       - maven-cache:/root/.m2
+      - audio-storage:/data/audio
 
   frontend:
     build: ./frontend
@@ -52,3 +54,4 @@ services:
 volumes:
   postgres-data:
   maven-cache:
+  audio-storage:

@@ -1,4 +1,4 @@
-package com.dissertation.backend.feedback.exceptions;
+package com.dissertation.backend.feedback_audio.exceptions;
 
 import java.io.IOException;
 

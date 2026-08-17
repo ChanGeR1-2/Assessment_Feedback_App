@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { getFeedbackByStudentIdAndAssessmentId } from "../api/feedbackApi.js";
 import { notifications } from "@mantine/notifications";
 import {Group, Loader, Stack, Text} from "@mantine/core";
-import CreateFeedbackForm from "../components/CreateFeedbackForm.jsx";
+import FeedbackForm from "../components/FeedbackForm.jsx";
 import { getAssessmentById } from "../api/assessmentsApi.js";
 import { getUserById } from "../api/usersApi.js";
 import FeedbackDetail from "../components/FeedbackDetail.jsx";
@@ -88,7 +88,7 @@ const LecturerFeedbackPage = () => {
     }
 
     return (
-        <CreateFeedbackForm
+        <FeedbackForm
             key={feedback?.id ?? "new"}
             assessmentId={assessmentId}
             assessmentTitle={assessment.title}

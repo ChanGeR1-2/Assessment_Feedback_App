@@ -4,7 +4,7 @@ import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import { createFeedbackQuery } from "../api/feedbackApi.js";
 
-const CreateFeedbackQueryForm = ({ feedbackId, onSuccess }) => {
+const FeedbackQueryForm = ({ feedbackId, onSuccess }) => {
     const [submitting, setSubmitting] = useState(false);
 
     const form = useForm({
@@ -67,4 +67,4 @@ const CreateFeedbackQueryForm = ({ feedbackId, onSuccess }) => {
     );
 };
 
-export default CreateFeedbackQueryForm;
+export default FeedbackQueryForm;

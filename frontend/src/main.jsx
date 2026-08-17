@@ -8,7 +8,7 @@ import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "./index.css";
 
-import LandingPage from "./LandingPage.jsx";
+import LandingPage from "./pages/LandingPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import LoginPage from "./pages/auth/LoginPage.jsx";

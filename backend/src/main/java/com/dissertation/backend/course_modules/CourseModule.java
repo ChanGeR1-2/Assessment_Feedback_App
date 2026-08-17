@@ -24,7 +24,7 @@ public class CourseModule {
     @JoinColumn(name = "lecturer_id", nullable = true)
     private AppUser lecturer;
 
-    protected CourseModule() {}
+    public CourseModule() {}
 
     public CourseModule(String title, String code, String academicYear, AppUser lecturer) {
         this.title = title;

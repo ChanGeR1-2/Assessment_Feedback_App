@@ -14,7 +14,7 @@ import {
 } from "@mantine/core";
 import { getUsers } from "../api/usersApi.js";
 import { useDisclosure } from "@mantine/hooks";
-import CreateUserForm from "../components/CreateUserForm.jsx";
+import UserForm from "../components/UserForm.jsx";
 import { notifications } from "@mantine/notifications";
 import { useSearchParams } from "react-router";
 
@@ -110,7 +110,7 @@ const UsersPage = () => {
             </Paper>
 
             <Modal opened={opened} onClose={close} title="Create User" centered>
-                <CreateUserForm onSuccess={handleCreateSuccess} />
+                <UserForm onSuccess={handleCreateSuccess} />
             </Modal>
 
             <Paper withBorder radius="md" style={{ overflow: "hidden" }}>

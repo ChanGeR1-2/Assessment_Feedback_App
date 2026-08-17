@@ -4,7 +4,7 @@ import {useState} from "react";
 import {notifications} from "@mantine/notifications";
 import {createUser} from "../api/usersApi.js";
 
-const CreateUserForm = ({onSuccess}) => {
+const UserForm = ({onSuccess}) => {
     const [submitting, setSubmitting] = useState(false);
 
     const form = useForm({
@@ -116,4 +116,4 @@ const CreateUserForm = ({onSuccess}) => {
     );
 };
 
-export default CreateUserForm;
+export default UserForm;
