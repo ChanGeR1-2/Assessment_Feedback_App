@@ -249,3 +249,24 @@ Each backend package follows the same shape: entity, repository, service,
 controller, plus `dto/` and `exceptions/` subpackages. Authorisation is
 enforced in the service layer rather than the controller, since access
 usually depends on the data — whether *this* lecturer owns *that* module.
+
+## Running the tests
+
+```bash
+docker compose up -d db
+docker exec assessment_feedback_db createdb -U assessment_user assessment_feedback_test
+cd backend
+./mvnw test
+```
+
+The `createdb` step is only needed once — subsequent runs reuse the database.
+
+Unit tests (service validation, the rubric lock) run standalone with mocked
+repositories. Integration tests (authorisation, repository queries) start the
+full application context against a separate `assessment_feedback_test`
+database, whose schema is built by the same Flyway migrations as the
+development database. Each test creates its own fixtures and runs in a
+transaction that rolls back, so tests are independent and the database is not
+left modified.
+
+Results are written to `backend/target/surefire-reports/`.
