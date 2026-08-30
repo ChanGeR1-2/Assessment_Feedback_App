@@ -13,6 +13,7 @@ public record AssessmentResponse(
         Integer totalMark,
         Short weight,
         String academicYear,
-        LocalDateTime feedbackDueDate
+        LocalDateTime feedbackDueDate,
+        Boolean isRubricLocked
 ) {
 }

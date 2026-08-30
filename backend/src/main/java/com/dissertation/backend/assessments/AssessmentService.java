@@ -307,7 +307,8 @@ public class AssessmentService {
                 .map(item -> markingItemToResponse(item, assessment.getId()))
                 .toList();
         int totalMark = markingItems.stream().mapToInt(MarkingItemResponse::maxMark).sum();
-        return new AssessmentResponse(assessment.getId(), assessment.getTitle(), assessment.getDueDate(), assessment.getModule().getId(), assessment.getModule().getTitle(), markingItems, totalMark, assessment.getWeight(), academicYear, assessment.getFeedbackDueDate());
+        boolean isRubricLocked = feedbackRepository.existsByAssessmentId(assessment.getId());
+        return new AssessmentResponse(assessment.getId(), assessment.getTitle(), assessment.getDueDate(), assessment.getModule().getId(), assessment.getModule().getTitle(), markingItems, totalMark, assessment.getWeight(), academicYear, assessment.getFeedbackDueDate(), isRubricLocked);
     }
 
     /**

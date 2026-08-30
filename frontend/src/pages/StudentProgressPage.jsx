@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import {
-    Badge, Group, Loader, Paper, Stack, Table, Text, Title
+    Badge, Group, Loader, Paper, SimpleGrid, Stack, Table, Text, Title, Box
 } from "@mantine/core";
 import {notifications} from "@mantine/notifications";
 import {getCurrentUser} from "./auth/currentUser.js";
@@ -111,44 +111,79 @@ const StudentProgressPage = () => {
         <div>
             <Title order={4} mb="xs">{title}</Title>
             {notes}
-            <Paper withBorder radius="md" style={{overflow: "hidden"}}>
+            <Paper withBorder radius="md">
                 {rows.length === 0 ? (
                     <Text p="md" c="dimmed">{emptyText}</Text>
                 ) : (
-                    <Table verticalSpacing="sm">
-                        <Table.Thead>
-                            <Table.Tr>
-                                <Table.Th>Theme</Table.Th>
-                                {years.map((y) => (
-                                    <Table.Th key={y} ta="center" w={110}>{y}</Table.Th>
-                                ))}
-                            </Table.Tr>
-                        </Table.Thead>
-                        <Table.Tbody>
+                    <>
+                        // mobile view
+                        <Stack gap="sm" p="md" hiddenFrom="sm">
                             {rows.map((row) => {
                                 const resolved = row.counts.at(-1) === 0 && row.counts.some((c) => c > 0);
                                 return (
-                                    <Table.Tr key={row.name} style={{ opacity: resolved ? 0.6 : 1 }}>
-                                        <Table.Td>
-                                            <Group gap="xs" wrap="nowrap">
-                                                <Text size="sm" fw={500}>{row.name}</Text>
-                                                {resolved && <Badge size="xs" variant="light" color="teal">Resolved</Badge>}
-                                            </Group>
-                                        </Table.Td>
-                                        {row.counts.map((count, i) => (
-                                            <Table.Td key={years[i]} ta="center">
-                                                {count > 0 ? (
-                                                    <Badge variant="light" color={color}>{count}</Badge>
-                                                ) : (
-                                                    <Text c="dimmed">—</Text>
-                                                )}
-                                            </Table.Td>
+                                    <Paper key={row.name} withBorder p="sm" radius="sm" style={{opacity: resolved ? 0.6 : 1}}>
+                                        <Group gap="xs" mb="xs" wrap="nowrap">
+                                            <Text size="sm" fw={500}>{row.name}</Text>
+                                            {resolved && (
+                                                <Badge size="xs" variant="light" color="teal">Resolved</Badge>
+                                            )}
+                                        </Group>
+                                        <Group gap="lg">
+                                            {row.counts.map((count, i) => (
+                                                <div key={years[i]}>
+                                                    <Text size="xs" c="dimmed">{years[i]}</Text>
+                                                    {count > 0 ? (
+                                                        <Badge variant="light" color={color}>{count}</Badge>
+                                                    ) : (
+                                                        <Text c="dimmed">—</Text>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </Group>
+                                    </Paper>
+                                );
+                            })}
+                        </Stack>
+
+                        // desktop view 
+                        <Box visibleFrom="sm">
+                            <Table verticalSpacing="sm">
+                                <Table.Thead>
+                                    <Table.Tr>
+                                        <Table.Th>Theme</Table.Th>
+                                        {years.map((y) => (
+                                            <Table.Th key={y} ta="center" w={110}>{y}</Table.Th>
                                         ))}
                                     </Table.Tr>
-                                )
-                            })}
-                        </Table.Tbody>
-                    </Table>
+                                </Table.Thead>
+                                <Table.Tbody>
+                                    {rows.map((row) => {
+                                        const resolved = row.counts.at(-1) === 0 && row.counts.some((c) => c > 0);
+                                        return (
+                                            <Table.Tr key={row.name} style={{opacity: resolved ? 0.6 : 1}}>
+                                                <Table.Td>
+                                                    <Group gap="xs" wrap="nowrap">
+                                                        <Text size="sm" fw={500}>{row.name}</Text>
+                                                        {resolved &&
+                                                            <Badge size="xs" variant="light" color="teal">Resolved</Badge>}
+                                                    </Group>
+                                                </Table.Td>
+                                                {row.counts.map((count, i) => (
+                                                    <Table.Td key={years[i]} ta="center">
+                                                        {count > 0 ? (
+                                                            <Badge variant="light" color={color}>{count}</Badge>
+                                                        ) : (
+                                                            <Text c="dimmed">—</Text>
+                                                        )}
+                                                    </Table.Td>
+                                                ))}
+                                            </Table.Tr>
+                                        )
+                                    })}
+                                </Table.Tbody>
+                            </Table>
+                        </Box>
+                    </>
                 )}
             </Paper>
         </div>
@@ -200,11 +235,11 @@ const StudentProgressPage = () => {
 
             <div>
                 <Title order={4} mb="xs">Average mark by year</Title>
-                <Group gap="md">
+                <SimpleGrid cols={{base: 1, sm: 3}} spacing="md">
                     {yearSummaries.map((y, index) => {
                         const delta = index > 0 ? y.average - yearSummaries[index - 1].average : null;
                         return (
-                            <Paper key={y.year} withBorder radius="md" p="md" style={{ flex: 1 }}>
+                            <Paper key={y.year} withBorder radius="md" p="md">
                                 <Group justify="space-between" align="flex-start" wrap="nowrap">
                                     <div>
                                         <Text size="xs" c="dimmed" tt="uppercase" fw={600}>{y.year}</Text>
@@ -216,15 +251,20 @@ const StudentProgressPage = () => {
                                         </Text>
                                     </div>
                                     {delta !== null && delta !== 0 && (
-                                        <Badge variant="light" color={delta > 0 ? "teal" : "red"} size="sm">
+                                        <Badge
+                                            variant="light"
+                                            color={delta > 0 ? "teal" : "red"}
+                                            size="sm"
+                                            style={{flexShrink: 0}}
+                                        >
                                             {delta > 0 ? "▲" : "▼"} {Math.abs(delta)}
                                         </Badge>
                                     )}
                                 </Group>
                             </Paper>
-                        )
+                        );
                     })}
-                </Group>
+                </SimpleGrid>
             </div>
 
             {matrix(

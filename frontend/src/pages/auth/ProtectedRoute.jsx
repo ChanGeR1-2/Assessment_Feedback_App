@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from "react-router";
 import { getCurrentUser } from "./currentUser.js";
+import UnauthorisedPage from "./UnauthorisedPage.jsx";
 
 const ProtectedRoute = ({ allowedRoles }) => {
     const currentUser = getCurrentUser();
@@ -7,7 +8,7 @@ const ProtectedRoute = ({ allowedRoles }) => {
 
     if (!currentUser || !token) return <Navigate to="/login" replace />;
     if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
-        return <Navigate to="/" replace />;
+        return <UnauthorisedPage />;
     }
     return <Outlet />;
 };

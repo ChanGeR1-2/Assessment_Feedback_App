@@ -56,5 +56,6 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Long> {
     Long countByLecturerIdAndAssessmentIdAndStatus(Long lecturerId, Long assessmentId, FeedbackStatus status);
     Long countByAssessmentId(Long assessmentId);
     boolean existsByAssessmentIdAndStudentId(Long assessmentId, Long studentId);
+    // Check if the rubric is locked for the assessment
     boolean existsByAssessmentId(Long assessmentId);
 }

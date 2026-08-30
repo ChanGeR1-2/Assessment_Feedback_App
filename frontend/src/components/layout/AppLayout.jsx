@@ -1,17 +1,17 @@
-import {AppShell, Avatar, Burger, Group, Menu, UnstyledButton, Text} from "@mantine/core";
+import {AppShell, Avatar, Box, Burger, Group, Menu, Text, UnstyledButton} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import {Outlet, useNavigate} from "react-router";
-import Navbar from "./Navbar";
-import "./AppLayout.css";
-
+import { Outlet, useNavigate } from "react-router";
+import Navbar from "./Navbar.jsx";
+import { getCurrentUser } from "../../pages/auth/currentUser.js";
 
 const AppLayout = () => {
     const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure();
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const currentUser = getCurrentUser();
     const navigate = useNavigate();
 
     const handleLogout = () => {
         localStorage.removeItem("currentUser");
+        localStorage.removeItem("token");
         navigate("/login");
     };
 
@@ -21,39 +21,49 @@ const AppLayout = () => {
             navbar={{
                 width: 250,
                 breakpoint: "sm",
-                collapsed: { mobile: !mobileOpened },
+                collapsed: { mobile: !mobileOpened, desktop: !currentUser },
             }}
             padding="md"
         >
-            <AppShell.Header className="app-shell-header">
-                <Group h="100%" px="md" justify="space-between">
-                    {/* Left: burger (mobile) + title */}
+            <AppShell.Header>
+                <Group h="100%" px="md" justify="space-between" wrap="nowrap">
                     <Group>
-                        <Burger opened={mobileOpened} onClick={toggleMobile} hiddenFrom="sm" size="sm" />
-                        <Text fw={500}>Assessment Feedback</Text>
+                        {currentUser && (
+                            <Burger
+                                opened={mobileOpened}
+                                onClick={toggleMobile}
+                                hiddenFrom="sm"
+                                size="sm"
+                                aria-label="Toggle navigation"
+                            />
+                        )}
+                        <Text fw={600}>Assessment Feedback</Text>
                     </Group>
 
-                    {/* Right: user menu */}
-                    <Menu position="bottom-end" withArrow>
-                        <Menu.Target>
-                            <UnstyledButton>
-                                <Group gap="xs">
-                                    <Avatar size="sm" radius="xl" />
-                                    <div>
-                                        <Text size="sm" fw={500}>{currentUser?.fullName}</Text>
-                                        <Text size="xs" c="dimmed">{currentUser?.role}</Text>
-                                    </div>
-                                </Group>
-                            </UnstyledButton>
-                        </Menu.Target>
-                        <Menu.Dropdown>
-                            <Menu.Item onClick={handleLogout}>Logout</Menu.Item>
-                        </Menu.Dropdown>
-                    </Menu>
+                    {currentUser && (
+                        <Menu position="bottom-end" withArrow>
+                            <Menu.Target>
+                                <UnstyledButton>
+                                    <Group gap="xs">
+                                        <Avatar size="sm" radius="xl" name={currentUser.fullName} color="initials" />
+                                        <Box visibleFrom="sm">
+                                            <Text size="sm" fw={500}>{currentUser.fullName}</Text>
+                                            <Text size="xs" c="dimmed" tt="capitalize">
+                                                {currentUser.role?.toLowerCase()}
+                                            </Text>
+                                        </Box>
+                                    </Group>
+                                </UnstyledButton>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                                <Menu.Item onClick={handleLogout}>Log out</Menu.Item>
+                            </Menu.Dropdown>
+                        </Menu>
+                    )}
                 </Group>
             </AppShell.Header>
 
-            <AppShell.Navbar>
+            <AppShell.Navbar p="md">
                 <Navbar onNavigate={closeMobile} />
             </AppShell.Navbar>
 

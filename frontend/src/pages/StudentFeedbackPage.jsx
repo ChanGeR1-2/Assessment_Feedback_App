@@ -6,12 +6,15 @@ import {Group, Loader, Stack, Title} from "@mantine/core";
 import FeedbackQuerySection from "../components/FeedbackQuerySection.jsx";
 import {StudentFeedbackBreadcrumbs} from "../components/FeedbackBreadcrumbs.jsx";
 import FeedbackDetail from "../components/FeedbackDetail.jsx";
+import UnauthorisedPage from "./auth/UnauthorisedPage.jsx";
+import NotFoundPage from "./NotFoundPage.jsx";
 
 const StudentFeedbackPage = () => {
     const {id} = useParams();
     const [loading, setLoading] = useState(true);
     const [feedback, setFeedback] = useState(null);
     const [notFound, setNotFound] = useState(false);
+    const [forbidden, setForbidden] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -24,9 +27,8 @@ const StudentFeedbackPage = () => {
                 }
             } catch (error) {
                 if (!cancelled) {
-                    if (error.status === 404) {
-                        setNotFound(true);
-                    }
+                    if (error.status === 404) { setNotFound(true); return; }
+                    if (error.status === 403) { setForbidden(true); return; }
                     notifications.show({
                         title: "Error",
                         message: error.message,
@@ -41,20 +43,17 @@ const StudentFeedbackPage = () => {
     }, [id]);
 
     if (loading) {
-        return (
-            <Group justify="center" p="xl">
-                <Loader />
-            </Group>
-        );
+        return <Group justify="center" p="xl"><Loader /></Group>;
     }
 
     if (notFound) {
-        return (
-            <Group justify = "center" p = "xl">
-                <Title>Feedback not found</Title>
-            </Group>
-        )
+        return <NotFoundPage message="That feedback doesn't exist, or you don't have access to it." />;
     }
+
+    if (forbidden) {
+        return <UnauthorisedPage />;
+    }
+
     return (
         <Stack gap="lg">
             <StudentFeedbackBreadcrumbs feedback={feedback} />

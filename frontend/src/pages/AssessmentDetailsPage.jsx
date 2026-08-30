@@ -8,6 +8,8 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import MarkingItemForm from "../components/MarkingItemForm.jsx";
+import UnauthorisedPage from "./auth/UnauthorisedPage.jsx";
+import NotFoundPage from "./NotFoundPage.jsx";
 
 const AssessmentDetailsPage = () => {
     const [assessment, setAssessment] = useState({ markingItems: [] });
@@ -15,13 +17,17 @@ const AssessmentDetailsPage = () => {
     const { moduleId, assessmentId } = useParams();
     const [opened, { open, close }] = useDisclosure(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [deletingItem, setDeletingItem] = useState(null);
+    const [notFound, setNotFound] = useState(false);
+    const [forbidden, setForbidden] = useState(false);
 
     const loadAssessment = useCallback(async () => {
         try {
-            setLoading(true);
             const data = await getAssessmentById({ assessmentId });
             setAssessment(data);
         } catch (error) {
+            if (error.status === 404) { setNotFound(true); return; }
+            if (error.status === 403) { setForbidden(true); return; }
             notifications.show({ title: "Error", message: error.message, color: "red" });
         } finally {
             setLoading(false);
@@ -52,6 +58,16 @@ const AssessmentDetailsPage = () => {
         setEditingItem(null);
     };
 
+    const confirmDelete = async () => {
+        try {
+            await deleteMarkingItem({ assessmentId, markingItemId: deletingItem.id });
+            setDeletingItem(null);
+            await loadAssessment();
+        } catch (error) {
+            notifications.show({ title: "Error", message: error.message, color: "red" });
+        }
+    };
+
     const markingItems = [...(assessment.markingItems ?? [])].sort(
         (a, b) => a.position - b.position
     );
@@ -63,6 +79,12 @@ const AssessmentDetailsPage = () => {
         })
         : null;
 
+    const formattedFeedbackDueDate = assessment.feedbackDueDate
+        ? new Date(assessment.feedbackDueDate).toLocaleDateString(undefined, {
+            day: "numeric", month: "long", year: "numeric"
+        })
+        : null;
+
     const handleMove = async (item, direction) => {
         const index = markingItems.findIndex(i => i.id === item.id);
         const target = index + direction;
@@ -70,7 +92,6 @@ const AssessmentDetailsPage = () => {
 
         const reordered = [...markingItems];
         [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
-        console.log(reordered);
         try {
             await reorderMarkingItems({assessmentId, orderedIds: reordered.map(i => i.id)});
             await loadAssessment();
@@ -83,19 +104,17 @@ const AssessmentDetailsPage = () => {
         }
     };
 
-    const handleDelete = async (item) => {
-        try {
-            await deleteMarkingItem({assessmentId, markingItemId: item.id});
-            await loadAssessment();
-        } catch (error) {
-            notifications.show({
-                title: "Error",
-                message: error.message,
-                color: "red"
-            })
-        }
+    if (loading) {
+        return <Group justify="center" p="xl"><Loader /></Group>;
     }
 
+    if (notFound) {
+        return <NotFoundPage message="That assessment doesn't exist, or you don't have access to it." />;
+    }
+
+    if (forbidden) {
+        return <UnauthorisedPage />;
+    }
 
     return (
         <Stack gap="lg">
@@ -112,8 +131,13 @@ const AssessmentDetailsPage = () => {
                     <Text c="dimmed" size="sm">
                         {formattedDueDate ? `Due ${formattedDueDate}` : "No due date set"}
                     </Text>
+                    <Text c="dimmed" size="sm">
+                        {formattedFeedbackDueDate ? `Feedback due ${formattedFeedbackDueDate}` : "No feedback due date set"}
+                    </Text>
                 </div>
-                <Button onClick={handleAdd}>Add marking item</Button>
+                {!assessment.isRubricLocked && (
+                    <Button onClick={handleAdd}>Add marking item</Button>
+                )}
             </Group>
 
             <Group gap="md">
@@ -142,10 +166,26 @@ const AssessmentDetailsPage = () => {
                 />
             </Modal>
 
+            <Modal opened={!!deletingItem} onClose={() => setDeletingItem(null)}
+                title="Delete marking item" centered>
+                <Text>Delete "{deletingItem?.name}"? This cannot be undone.</Text>
+                <Group justify="flex-end" mt="lg">
+                    <Button variant="default" onClick={() => setDeletingItem(null)}>Cancel</Button>
+                    <Button color="red" onClick={confirmDelete}>Delete</Button>
+                </Group>
+            </Modal>
+
+            {assessment.isRubricLocked && (
+                <Paper withBorder p="sm" radius="md" bg="var(--mantine-color-gray-0)">
+                    <Text size="sm" c="dimmed">
+                        Feedback has been recorded against this marking scheme, so its criteria can no
+                        longer be added, edited or removed. Reordering is still permitted.
+                    </Text>
+                </Paper>
+            )}
+
             <Paper withBorder radius="md" style={{ overflow: "hidden" }}>
-                {loading ? (
-                    <Group justify="center" p="xl"><Loader /></Group>
-                ) : markingItems.length === 0 ? (
+                {markingItems.length === 0 ? (
                     <Stack align="center" gap="xs" p="xl">
                         <Text c="dimmed">No marking items yet</Text>
                         <Text size="sm" c="dimmed">
@@ -190,20 +230,24 @@ const AssessmentDetailsPage = () => {
                                                     ↓
                                                 </ActionIcon>
                                             </Tooltip>
-                                            <Tooltip label="Edit">
-                                                <ActionIcon variant="subtle" onClick={() => handleEdit(item)}>
-                                                    ✎
-                                                </ActionIcon>
-                                            </Tooltip>
-                                            <Tooltip label="Delete">
-                                                <ActionIcon
-                                                    variant="subtle"
-                                                    color="red"
-                                                    onClick={() => handleDelete(item)}
-                                                >
-                                                    ✕
-                                                </ActionIcon>
-                                            </Tooltip>
+                                            {!assessment.isRubricLocked && (
+                                                <>
+                                                    <Tooltip label="Edit">
+                                                        <ActionIcon variant="subtle" onClick={() => handleEdit(item)}>
+                                                            ✎
+                                                        </ActionIcon>
+                                                    </Tooltip>
+                                                    <Tooltip label="Delete">
+                                                        <ActionIcon
+                                                            variant="subtle"
+                                                            color="red"
+                                                            onClick={() => setDeletingItem(item)}
+                                                        >
+                                                            ✕
+                                                        </ActionIcon>
+                                                    </Tooltip>
+                                                </>
+                                            )}
                                         </Group>
                                     </Table.Td>
                                 </Table.Tr>

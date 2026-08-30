@@ -6,7 +6,6 @@ import { Notifications } from "@mantine/notifications";
 
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
-import "./index.css";
 
 import LandingPage from "./pages/LandingPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
@@ -27,6 +26,7 @@ import StudentModulesPage from "./pages/StudentModulesPage.jsx";
 import FeedbackPhrasesPage from "./pages/FeedbackPhrasesPage.jsx";
 import StudentProgressPage from "./pages/StudentProgressPage.jsx";
 import LecturerModulesPage from "./pages/LecturerModulesPage.jsx";
+import NotFoundPage from "./pages/NotFoundPage.jsx";
 
 const router = createBrowserRouter([
     {
@@ -110,11 +110,12 @@ const router = createBrowserRouter([
                         element: <StudentModuleFeedbackPage />
                     },
                     {
-                        path: "/my-progress",
+                        path: "my-progress",
                         element: <StudentProgressPage />
                     }
                 ]
-            }
+            },
+            { path: "*", element: <NotFoundPage /> }
         ]
     }
 ]);

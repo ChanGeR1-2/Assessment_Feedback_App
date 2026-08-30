@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import {useState} from "react";
+import {Navigate, useNavigate} from "react-router";
 import {
     Button,
     Paper,
@@ -7,17 +7,18 @@ import {
     Stack,
     Text,
     TextInput,
-    Title
+    Title,
+    Container,
 } from "@mantine/core";
-import { useForm } from "@mantine/form";
-import { notifications } from "@mantine/notifications";
+import {useForm} from "@mantine/form";
+import {notifications} from "@mantine/notifications";
 
-import { loginUser } from "../../api/authApi.js";
-
-import "./LoginPage.css";
+import {loginUser} from "../../api/authApi.js";
+import {getCurrentUser} from "./currentUser.js";
 
 
 const LoginPage = () => {
+    const currentUser = getCurrentUser();
     const navigate = useNavigate();
     const [submitting, setSubmitting] = useState(false);
 
@@ -39,7 +40,7 @@ const LoginPage = () => {
         setSubmitting(true);
 
         try {
-            const { token, ...user } = await loginUser(values);
+            const {token, ...user} = await loginUser(values);
             localStorage.setItem("token", token);
             localStorage.setItem("currentUser", JSON.stringify(user));
 
@@ -48,13 +49,7 @@ const LoginPage = () => {
                 message: `Welcome back, ${user.fullName}`
             });
 
-            if (user.role === "ADMIN") {
-                navigate("/admin-dashboard");
-            } else if (user.role === "LECTURER") {
-                navigate("/lecturer-dashboard");
-            } else {
-                navigate("/student-dashboard");
-            }
+            navigate(`/${user.role.toLowerCase()}-dashboard`);
         } catch (error) {
             notifications.show({
                 title: "Login failed",
@@ -66,8 +61,12 @@ const LoginPage = () => {
         }
     }
 
+    if (currentUser) {
+        return <Navigate to={`/${currentUser.role.toLowerCase()}-dashboard`} replace/>;
+    }
+
     return (
-        <main className="login-page">
+        <Container size={420} py={80} px="md">
             <Paper withBorder shadow="sm" radius="md" p="xl" maw={420} w="100%">
                 <Stack>
                     <div>
@@ -87,6 +86,7 @@ const LoginPage = () => {
                             />
 
                             <PasswordInput
+                                required
                                 label="Password"
                                 placeholder="Your password"
                                 {...form.getInputProps("password")}
@@ -99,7 +99,7 @@ const LoginPage = () => {
                     </form>
                 </Stack>
             </Paper>
-        </main>
+        </Container>
     );
 };
 

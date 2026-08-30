@@ -5,6 +5,8 @@ import { notifications } from "@mantine/notifications";
 import { getCurrentUser } from "./auth/currentUser.js";
 import { getFeedbackByStudentId } from "../api/feedbackApi.js";
 import {getAssessmentsByModuleId} from "../api/assessmentsApi.js";
+import UnauthorisedPage from "./auth/UnauthorisedPage.jsx";
+import NotFoundPage from "./NotFoundPage.jsx";
 
 const StudentModuleFeedbackPage = () => {
     const currentUser = getCurrentUser();
@@ -13,6 +15,8 @@ const StudentModuleFeedbackPage = () => {
 
     const [assessments, setAssessments] = useState([]);
     const [feedback, setFeedback] = useState([]);
+    const [notFound, setNotFound] = useState(false);
+    const [forbidden, setForbidden] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -26,13 +30,15 @@ const StudentModuleFeedbackPage = () => {
                 setFeedback(feedbackData.filter((f) => String(f.moduleId) === moduleId));
             })
             .catch((e) => {
-                if (!cancelled) notifications.show({ title: "Error", message: e.message, color: "red" });
+                if (!cancelled) {
+                    if (e.status === 404) { setNotFound(true); return; }
+                    if (e.status === 403) { setForbidden(true); return; }
+                    notifications.show({ title: "Error", message: e.message, color: "red"})
+                }
             })
             .finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
     }, [moduleId, currentUser?.id]);
-
-    if (loading) return <Group justify="center" p="xl"><Loader /></Group>;
 
     const moduleTitle = feedback[0]?.moduleTitle;
 
@@ -55,6 +61,18 @@ const StudentModuleFeedbackPage = () => {
     const gradeSoFar = weightAssessed > 0
         ? Math.round((weightedScore / weightAssessed) * 100)
         : null;
+
+    if (loading) {
+        return <Group justify="center" p="xl"><Loader /></Group>;
+    }
+
+    if (notFound) {
+        return <NotFoundPage message="That assessment doesn't exist, or you don't have access to it." />;
+    }
+
+    if (forbidden) {
+        return <UnauthorisedPage />;
+    }
 
     return (
         <Stack gap="lg">
