@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Loader, Stack, Text } from "@mantine/core";
 
-function AudioPlayer({ feedbackId, label, refreshKey = 0 }) {
+function AudioPlayer({ feedbackId, label, refreshKey = 0, onLoaded }) {
     const [url, setUrl] = useState(null);
     const [state, setState] = useState("loading"); // loading | ready | none | error
 
@@ -16,7 +16,11 @@ function AudioPlayer({ feedbackId, label, refreshKey = 0 }) {
                     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
                 });
                 if (res.status === 404) {
-                    if (!cancelled) setState("none");
+                    if (!cancelled) {
+                        setState("none");
+                        onLoaded?.(false);
+                    }
+
                     return;
                 }
                 if (!res.ok) throw new Error();
@@ -25,9 +29,13 @@ function AudioPlayer({ feedbackId, label, refreshKey = 0 }) {
                 if (!cancelled) {
                     setUrl(objectUrl);
                     setState("ready");
+                    onLoaded?.(true);
                 }
             } catch {
-                if (!cancelled) setState("error");
+                if (!cancelled) {
+                    setState("error");
+                    onLoaded?.(false);
+                }
             }
         })();
 

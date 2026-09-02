@@ -58,19 +58,42 @@ public class FeedbackAudioService {
 
         String filename = audioStorageService.store(file);
         try {
-            // Save the new file metadata before deleting the existing one so that the delete is atomic
-            feedbackAudioRepository.save(
-                    new FeedbackAudio(feedback, filename, file.getContentType(), file.getSize()));
-
+            // The unique constraint on feedback_id permits only one recording per feedback,
+            // so the existing row must be removed and flushed before the new one is inserted.
             if (existing.isPresent()) {
                 feedbackAudioRepository.delete(existing.get());
-                feedbackAudioRepository.flush(); // flush to ensure the delete is committed
+                feedbackAudioRepository.flush();
             }
+            feedbackAudioRepository.save(
+                    new FeedbackAudio(feedback, filename, file.getContentType(), file.getSize()));
         } catch (RuntimeException e) {
-            audioStorageService.delete(filename); // delete the audio file if there's an error saving the metadata
+            audioStorageService.delete(filename);
             throw e;
         }
+
+        // The previous file is removed only once the replacement is safely persisted.
         existing.ifPresent(a -> audioStorageService.delete(a.getFilename()));
+    }
+
+    /**
+     * Deletes the audio file with the given ID
+     * @param feedbackId the feedback id
+     * @param lecturerId the lecturer id
+     * @throws AudioNotFoundException if the audio file does not exist.
+     * @throws ForbiddenException if the user is not authorised to delete the audio file.
+     * @throws FeedbackNotFoundException if the feedback does not exist.
+     */
+    @Transactional
+    public void deleteAudio(Long feedbackId, Long lecturerId) {
+        Feedback feedback = feedbackRepository.findByIdWithDetails(feedbackId)
+                .orElseThrow(() -> new FeedbackNotFoundException(feedbackId));
+        FeedbackAudio audioData = feedbackAudioRepository.findByFeedbackId(feedbackId)
+                .orElseThrow(() -> new AudioNotFoundException(feedbackId));
+        if (audioData.getFeedback().getLecturer() != null && !Objects.equals(feedback.getLecturer().getId(), lecturerId)) {
+            throw new ForbiddenException("You are not authorised to delete this audio file.");
+        }
+        feedbackAudioRepository.deleteById(audioData.getId());
+        audioStorageService.delete(audioData.getFilename());
     }
 
     /**

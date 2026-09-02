@@ -32,12 +32,6 @@ export async function updateFeedback ({feedback, feedbackId, publish}){
     });
 }
 
-export async function publishFeedback ({feedbackId}){
-    return await apiFetch(`/api/feedback/${feedbackId}/publish`, {
-        method: "PUT"
-    });
-}
-
 export async function createFeedbackQuery({feedbackId, query}){
     console.log(query);
     return await apiFetch(`/api/feedback/${feedbackId}/feedback-queries`, {
@@ -64,6 +58,12 @@ export const publishFeedbackList = async ({ studentIds, assessmentId }) => {
     return apiFetch(`/api/assessments/${assessmentId}/feedback/publish`, {
         method: "PATCH",
         body: JSON.stringify({ studentIds }),
+    });
+};
+
+export const deleteFeedbackAudio = async ({ feedbackId }) => {
+    return apiFetch(`/api/feedback/${feedbackId}/audio`, {
+        method: "DELETE",
     });
 };
 

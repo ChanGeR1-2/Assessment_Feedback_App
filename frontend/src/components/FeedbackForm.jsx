@@ -14,7 +14,7 @@ import {
 import {useEffect, useMemo, useState} from "react";
 import {useForm} from "@mantine/form";
 import {notifications} from "@mantine/notifications";
-import {submitFeedback, updateFeedback} from "../api/feedbackApi.js";
+import {deleteFeedbackAudio, submitFeedback, updateFeedback} from "../api/feedbackApi.js";
 import {Link} from "react-router";
 import {useAudioRecorder} from "../hooks/useAudioRecorder.js";
 import AudioPlayer from "./AudioPlayer.jsx";
@@ -44,6 +44,7 @@ const FeedbackForm = ({
     const [phrases, setPhrases] = useState([]);
     const [tags, setTags] = useState([]);
     const [publishingFeedback, setPublishingFeedback] = useState(null);
+    const [hasStoredAudio, setHasStoredAudio] = useState(false);
     useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
     useEffect(() => {
@@ -167,6 +168,17 @@ const FeedbackForm = ({
         } catch (error) {
             notifications.show({ title: "Error", message: error.message, color: "red" });
         }
+    };
+
+    const handleAudioDelete = async () => {
+        try {
+            await deleteFeedbackAudio({feedbackId: feedback.id});
+            setAudioVersion((v) => v + 1);
+            notifications.show({ title: "Audio deleted", message: "The audio recording has been deleted.", color: "green" });
+            reset();
+        } catch (error) {
+            notifications.show({ title: "Error", message: error.message, color: "red" });
+        }
     }
 
     return (
@@ -262,20 +274,33 @@ const FeedbackForm = ({
                                 feedbackId={feedback.id}
                                 label="Current recording"
                                 refreshKey={audioVersion}
+                                onLoaded={setHasStoredAudio}
                             />
                         )}
 
                         {error && <Text size="sm" c="red" mb="xs">{error}</Text>}
 
                         {!audioBlob ? (
-                            <Button
-                                variant="light"
-                                color={recording ? "red" : "blue"}
-                                onClick={recording ? stop : start}
-                                mt={isEditing ? "sm" : undefined}
-                            >
-                                {recording ? "Stop recording" : (isEditing ? "Record new audio" : "Record audio")}
-                            </Button>
+                            <Group>
+                                <Button
+                                    variant="light"
+                                    color={recording ? "red" : "blue"}
+                                    onClick={recording ? stop : start}
+                                    mt={isEditing ? "sm" : undefined}
+                                >
+                                    {recording ? "Stop recording" : (isEditing && hasStoredAudio ? "Record new audio" : "Record audio")}
+                                </Button>
+                                {isEditing && hasStoredAudio && !recording && (
+                                    <Button
+                                        variant="subtle"
+                                        color="red"
+                                        onClick={handleAudioDelete}
+                                        mt="sm"
+                                    >
+                                        Delete recording
+                                    </Button>
+                                )}
+                            </Group>
                         ) : (
                             <Stack gap="sm">
                                 {isEditing && (
