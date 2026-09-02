@@ -1,8 +1,8 @@
 import { Link, useNavigate, useParams } from "react-router";
-import { useEffect, useState } from "react";
+import {useCallback, useEffect, useState} from "react";
 import { notifications } from "@mantine/notifications";
 import {
-    Anchor, Badge, Breadcrumbs, Group, Loader, Paper, Select,
+    Anchor, Badge, Breadcrumbs, Button, Group, Loader, Modal, Paper, Select,
     Stack, Table, Text, TextInput, Title
 } from "@mantine/core";
 import { getStudents } from "../api/usersApi.js";
@@ -10,6 +10,7 @@ import { getAssessmentById } from "../api/assessmentsApi.js";
 import { getModuleById } from "../api/modulesApi.js";
 import NotFoundPage from "./NotFoundPage.jsx";
 import UnauthorisedPage from "./auth/UnauthorisedPage.jsx";
+import {publishFeedbackList} from "../api/feedbackApi.js";
 
 const STATUS_COLOURS = { TODO: "gray", DRAFT: "yellow", PUBLISHED: "teal" };
 
@@ -25,36 +26,30 @@ const AssessmentSubmissionsPage = () => {
     const [statusFilter, setStatusFilter] = useState("ALL");
     const [notFound, setNotFound] = useState(false);
     const [forbidden, setForbidden] = useState(false);
+    const [publishAllInProgress, setPublishAllInProgress] = useState(false);
+
+    const loadData = useCallback(async () => {
+        try {
+            const [studentData, assessmentData, moduleData] = await Promise.all([
+                getStudents({ moduleId, assessmentId }),
+                getAssessmentById({ assessmentId }),
+                getModuleById({ moduleId }),
+            ]);
+            setStudents(studentData);
+            setAssessment(assessmentData);
+            setModule(moduleData);
+        } catch (error) {
+            if (error.status === 404) { setNotFound(true); return; }
+            if (error.status === 403) { setForbidden(true); return; }
+            notifications.show({ title: "Error", message: error.message, color: "red" });
+        } finally {
+            setLoading(false);
+        }
+    }, [moduleId, assessmentId]);
 
     useEffect(() => {
-        let cancelled = false;
-
-        const loadData = async () => {
-            try {
-                const [studentData, assessmentData, moduleData] = await Promise.all([
-                    getStudents({ moduleId, assessmentId }),
-                    getAssessmentById({ assessmentId }),
-                    getModuleById({ moduleId }),
-                ]);
-                if (!cancelled) {
-                    setStudents(studentData);
-                    setAssessment(assessmentData);
-                    setModule(moduleData);
-                }
-            } catch (error) {
-                if (!cancelled) {
-                    if (error.status === 404) { setNotFound(true); return; }
-                    if (error.status === 403) { setForbidden(true); return; }
-                    notifications.show({ title: "Error", message: error.message, color: "red" });
-                }
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        };
-
         loadData();
-        return () => { cancelled = true; };
-    }, [moduleId, assessmentId]);
+    }, [loadData]);
 
     const statusOf = (student) => student.feedback?.status ?? "TODO";
 
@@ -76,12 +71,27 @@ const AssessmentSubmissionsPage = () => {
 
     const published = students.filter((s) => statusOf(s) === "PUBLISHED").length;
     const drafts = students.filter((s) => statusOf(s) === "DRAFT").length;
+    const canPublishAll = students.every((s) =>  statusOf(s) === "PUBLISHED" || statusOf(s) === "DRAFT");
+    const allArePublished = students.every((s) => statusOf(s) === "PUBLISHED");
 
     const feedbackDue = assessment.feedbackDueDate
         ? new Date(assessment.feedbackDueDate).toLocaleDateString(undefined, {
             day: "numeric", month: "long", year: "numeric",
         })
         : null;
+
+    const handlePublishAll = async () => {
+        try {
+            await publishFeedbackList({
+                studentIds: students.map((s) => s.id),
+                assessmentId,
+            });
+            notifications.show({ title: "Success", message: "All feedback published", color: "green" });
+            await loadData();
+        } catch (error) {
+            notifications.show({ title: "Error", message: error.message, color: "red" });
+        }
+    };
 
     if (loading) {
         return <Group justify="center" p="xl"><Loader /></Group>;
@@ -104,19 +114,37 @@ const AssessmentSubmissionsPage = () => {
                 <Text size="sm" c="dimmed">{assessment.title}</Text>
             </Breadcrumbs>
 
-            <div>
-                <Title order={1}>{assessment.title}</Title>
-                <Text c="dimmed">
-                    {module.code} {module.title} ({module.academicYear})
-                </Text>
+            <Modal opened={publishAllInProgress} onClose={() => setPublishAllInProgress(false)} title="Publish Feedback" centered>
+                <Text>Publish Feedback? This cannot be undone.</Text>
+                <Group justify="flex-end" mt="lg">
+                    <Button variant="default" onClick={() => setPublishAllInProgress(false)}>Cancel</Button>
+                    <Button color="red" onClick={handlePublishAll}>Publish</Button>
+                </Group>
+            </Modal>
 
-                <Text size="sm" c="dimmed" mt={4}>
-                    {published} of {students.length} marked
-                    {drafts > 0 && `, ${drafts} in draft`}
-                    {feedbackDue && ` · feedback due ${feedbackDue}`}
-                </Text>
+            <Group justify="space-between" align="center" mb="md">
+                <Stack gap={0} align="flex-start" style={{ flex: 1 }}>
+                    <Title order={1}>{assessment.title}</Title>
+                    <Text c="dimmed">
+                        {module.code} {module.title} ({module.academicYear})
+                    </Text>
 
-            </div>
+                    <Text size="sm" c="dimmed" mt={4}>
+                        {published} of {students.length} marked
+                        {drafts > 0 && `, ${drafts} in draft`}
+                        {feedbackDue && ` · feedback due ${feedbackDue}`}
+                    </Text>
+                </Stack>
+                {!allArePublished && (
+                    <Button
+                        onClick={() => setPublishAllInProgress(true)}
+                        disabled={!canPublishAll}
+                    >
+                        Publish All
+                    </Button>
+                )}
+            </Group>
+
 
             <Group align="flex-end" wrap="wrap">
                 <TextInput

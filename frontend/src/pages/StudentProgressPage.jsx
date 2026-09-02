@@ -116,7 +116,6 @@ const StudentProgressPage = () => {
                     <Text p="md" c="dimmed">{emptyText}</Text>
                 ) : (
                     <>
-                        // mobile view
                         <Stack gap="sm" p="md" hiddenFrom="sm">
                             {rows.map((row) => {
                                 const resolved = row.counts.at(-1) === 0 && row.counts.some((c) => c > 0);
@@ -145,7 +144,6 @@ const StudentProgressPage = () => {
                             })}
                         </Stack>
 
-                        // desktop view 
                         <Box visibleFrom="sm">
                             <Table verticalSpacing="sm">
                                 <Table.Thead>

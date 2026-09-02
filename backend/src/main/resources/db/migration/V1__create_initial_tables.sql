@@ -21,7 +21,6 @@ CREATE TABLE course_module
             ON DELETE SET NULL,
     CONSTRAINT uk_module_code_academic_year
         UNIQUE (code, academic_year)
-
 );
 
 CREATE INDEX idx_module_lecturer_id ON course_module (lecturer_id);

@@ -18,7 +18,7 @@ public interface EnrolmentRepository extends JpaRepository<Enrolment, Long> {
     @Query("SELECT e FROM Enrolment e " +
             "JOIN FETCH e.student " +
             "JOIN FETCH e.module m " +
-            "JOIN FETCH m.lecturer l " +
+            "LEFT JOIN FETCH m.lecturer l " +
             "WHERE l.id = :lecturerId " +
             "AND (:moduleId IS NULL OR m.id = :moduleId)")
     List<Enrolment> findByLecturerId(@Param("lecturerId") Long lecturerId,

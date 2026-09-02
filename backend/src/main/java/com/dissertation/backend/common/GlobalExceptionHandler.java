@@ -172,6 +172,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(IncompletePublishListException.class)
+    public ResponseEntity<Map<String, String>> handleIncompletePublishList(IncompletePublishListException ex) {
+        return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
         return messageResponse(HttpStatus.BAD_REQUEST, ex.getMessage());

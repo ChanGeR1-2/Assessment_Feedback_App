@@ -3,6 +3,7 @@ package com.dissertation.backend.feedback;
 import com.dissertation.backend.config.AppUserDetails;
 import com.dissertation.backend.feedback.dto.CreateFeedbackRequest;
 import com.dissertation.backend.feedback.dto.FeedbackResponse;
+import com.dissertation.backend.feedback.dto.PublishFeedbackListRequest;
 import com.dissertation.backend.feedback_audio.AudioStorageService;
 import com.dissertation.backend.feedback_audio.FeedbackAudio;
 import com.dissertation.backend.feedback_audio.FeedbackAudioService;
@@ -32,9 +33,9 @@ public class FeedbackController {
         return new ResponseEntity<>(feedbackService.saveFeedback(request, principal.getId(), publish), HttpStatus.CREATED);
     }
 
-    @PatchMapping("/api/feedback/{feedbackId}/publish")
-    public ResponseEntity<Void> publishFeedback(@PathVariable Long feedbackId, @AuthenticationPrincipal AppUserDetails principal) {
-        feedbackService.publishFeedback(feedbackId, principal.getId());
+    @PatchMapping("/api/assessments/{assessmentId}/feedback/publish")
+    public ResponseEntity<Void> publishFeedbackList(@PathVariable Long assessmentId, @RequestBody PublishFeedbackListRequest req, @AuthenticationPrincipal AppUserDetails principal) {
+        feedbackService.publishFeedbackList(req.studentIds(), assessmentId, principal.getId());
         return ResponseEntity.noContent().build();
     }
 

@@ -58,6 +58,13 @@ export const answerFeedbackQuery = async ({ feedbackQueryId, answer }) => {
         method: "POST",
         body: JSON.stringify({ answer }),
     });
-}
+};
+
+export const publishFeedbackList = async ({ studentIds, assessmentId }) => {
+    return apiFetch(`/api/assessments/${assessmentId}/feedback/publish`, {
+        method: "PATCH",
+        body: JSON.stringify({ studentIds }),
+    });
+};
 
 export const getStudentFeedbackQueries = async ({ studentId }) => apiFetch(`/api/students/${studentId}/feedback-queries`);

@@ -2,7 +2,7 @@ import {
     Anchor,
     Breadcrumbs,
     Button,
-    Group,
+    Group, Modal,
     MultiSelect,
     NumberInput,
     Paper,
@@ -43,6 +43,7 @@ const FeedbackForm = ({
     const [audioVersion, setAudioVersion] = useState(0);
     const [phrases, setPhrases] = useState([]);
     const [tags, setTags] = useState([]);
+    const [publishingFeedback, setPublishingFeedback] = useState(null);
     useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
     useEffect(() => {
@@ -158,6 +159,15 @@ const FeedbackForm = ({
             setSubmitting(false);
         }
     };
+
+    const confirmPublish = async () => {
+        try {
+            await handleSubmit(publishingFeedback, true);
+            setPublishingFeedback(null);
+        } catch (error) {
+            notifications.show({ title: "Error", message: error.message, color: "red" });
+        }
+    }
 
     return (
         <Stack gap="lg">
@@ -279,13 +289,22 @@ const FeedbackForm = ({
                         )}
                     </Paper>
 
+                    <Modal opened={!!publishingFeedback} onClose={() => setPublishingFeedback(null)} title="Publish Feedback" centered>
+                        <Text>Publish Feedback? This cannot be undone.</Text>
+                        <Group justify="flex-end" mt="lg">
+                            <Button variant="default" onClick={() => setPublishingFeedback(null)}>Cancel</Button>
+                            <Button color="red" onClick={confirmPublish}>Publish</Button>
+                        </Group>
+                    </Modal>
+
+
                     <Group justify="flex-end">
                         <Button variant="default" loading={submitting}
                             onClick={() => form.onSubmit((values) => handleSubmit(values, false))()}>
                             Save as draft
                         </Button>
                         <Button loading={submitting}
-                            onClick={() => form.onSubmit((values) => handleSubmit(values, true))()}>
+                            onClick={() => setPublishingFeedback(form.values)}>
                             {isEditing ? "Save and publish" : "Publish"}
                         </Button>
                     </Group>

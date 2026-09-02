@@ -13,6 +13,7 @@ import com.dissertation.backend.common.exceptions.ForbiddenException;
 import com.dissertation.backend.common.exceptions.InvalidRoleException;
 import com.dissertation.backend.config.AppUserDetails;
 import com.dissertation.backend.course_modules.CourseModule;
+import com.dissertation.backend.course_modules.ModuleRepository;
 import com.dissertation.backend.enrolment.EnrolmentRepository;
 import com.dissertation.backend.feedback.dto.CreateFeedbackItemRequest;
 import com.dissertation.backend.feedback.dto.CreateFeedbackRequest;
@@ -55,13 +56,16 @@ public class FeedbackService {
     private final EnrolmentRepository enrolmentRepository;
     private final MarkingItemRepository markingItemRepository;
     private final TagRepository tagRepository;
-    public FeedbackService(FeedbackRepository feedbackRepository, AssessmentRepository assessmentRepository, UserRepository userRepository, EnrolmentRepository enrolmentRepository, MarkingItemRepository markingItemRepository, TagRepository tagRepository) {
+    private final ModuleRepository moduleRepository;
+
+    public FeedbackService(FeedbackRepository feedbackRepository, AssessmentRepository assessmentRepository, UserRepository userRepository, EnrolmentRepository enrolmentRepository, MarkingItemRepository markingItemRepository, TagRepository tagRepository, ModuleRepository moduleRepository) {
         this.feedbackRepository = feedbackRepository;
         this.assessmentRepository = assessmentRepository;
         this.userRepository = userRepository;
         this.enrolmentRepository = enrolmentRepository;
         this.markingItemRepository = markingItemRepository;
         this.tagRepository = tagRepository;
+        this.moduleRepository = moduleRepository;
     }
 
     /**
@@ -222,24 +226,28 @@ public class FeedbackService {
     }
 
     /**
-     * Publish feedback without editing it.
-     * @param feedbackId the feedback id
+     * Publishes all feedback for a given cohort.
+     * @param studentIds the student ids
+     * @param assessmentId the assessment id
      * @param lecturerId the lecturer id
-     * @return the feedback response.
      * @throws ForbiddenException if the user is not authorised to publish the feedback.
-     * @throws FeedbackNotFoundException if the feedback does not exist.
+     * @throws IncompletePublishListException if there is not draft feedback for every student in the cohort.
      */
     @Transactional
-    public FeedbackResponse publishFeedback(Long feedbackId, Long lecturerId) {
-        Feedback feedback = feedbackRepository.findByIdWithDetails(feedbackId)
-                .orElseThrow(() -> new FeedbackNotFoundException(feedbackId));
-
-        if (!Objects.equals(feedback.getLecturer().getId(), lecturerId)) {
-            throw new ForbiddenException("You are not authorised to publish this feedback.");
+    public void publishFeedbackList(List<Long> studentIds, Long assessmentId, Long lecturerId) {
+        List<Feedback> feedbacks = new ArrayList<>();
+        for (Long studentId : studentIds) {
+            Optional<Feedback> feedback = feedbackRepository.findByAssessmentIdAndStudentId(assessmentId, studentId);
+            feedback.ifPresentOrElse(feedbacks::add, () -> {
+                throw new IncompletePublishListException("All feedback for the cohort must be ready to publish.");
+            });
         }
-
-        feedback.publish();
-        return toResponse(feedback);
+        for (Feedback feedback : feedbacks) {
+            if (!Objects.equals(feedback.getLecturer().getId(), lecturerId)) {
+                throw new ForbiddenException("You are not authorised to publish this feedback.");
+            }
+            feedback.publish();
+        }
     }
 
     /**
