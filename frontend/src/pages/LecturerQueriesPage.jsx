@@ -34,6 +34,8 @@ const LecturerQueriesPage = () => {
         setAnswering(null);
     };
 
+    queries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
     if (loading) {
         return (
             <Group justify="center" p="xl">
