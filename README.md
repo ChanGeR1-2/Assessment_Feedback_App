@@ -77,17 +77,18 @@ as the lecturer role.
 
 | Area | Endpoints | Access |
 |---|---|---|
-| Auth | `POST /api/auth/login` | Public |
-| Users | `GET/POST /api/users` | Collection: admin · Individual: authenticated |
-| Enrolments | `/api/enrolments`, `/api/students/{studentId}/modules` | Write: admin · Read: authenticated |
-| Modules | `GET /api/modules`, `POST /api/modules` | Read: authenticated · Write: admin |
-| Assessments | `GET /api/assessments`, `/api/assessments/{id}`, `/api/assessments/stats` | Scoped by role |
-| Marking scheme | `/api/assessments/{id}/marking-items` | Owning lecturer |
-| Feedback | `POST /api/feedback`, `GET /api/feedback/{id}` | Lecturer writes · student reads own |
-| Audio | `/api/feedback/{id}/audio` | Owning lecturer · recipient student |
-| Queries | `/api/students/{studentId}/feedback-queries`, `/api/lecturer/feedback-queries`, `/api/feedback-queries/{id}/answer` | Student asks · lecturer answers |
-| Tags | `GET /api/tags`, `/api/students/{id}/tag-summary`, `/api/lecturer/tag-summary`, `/api/students/{id}/tag-summary/per-year` | Vocabulary: authenticated · Summaries: own data only |
-| Phrases | `/api/phrases` | Lecturer (own only) |
+| Authentication | `POST /api/auth/login` | Public |
+| Users | `GET/POST /api/users`, `GET /api/users/{id}` | Collection: admin · Individual: authenticated |
+| Modules | `GET/POST /api/modules`, `GET /api/modules/{id}`, `PATCH /api/modules/{id}/lecturer` | Read: authenticated · Write: admin |
+| Enrolments | `GET/POST /api/enrolments`, `GET /api/students/{id}/modules` | Write: admin · Read: own data only |
+| Assessments | `GET /api/assessments`, `GET /api/assessments/{id}`, `GET /api/modules/{id}/assessments`, `GET /api/assessments/stats` | Scoped by role |
+| Marking schemes | `POST /api/assessments/{id}/marking-items`, `PATCH`/`DELETE /api/assessments/{id}/marking-items/{itemId}`, `PATCH /api/assessments/{id}/marking-items/order` | Owning lecturer |
+| Feedback | `POST /api/feedback`, `PUT /api/feedback/{id}`, `GET /api/feedback/{id}`, `PATCH /api/assessments/{id}/feedback/publish` | Lecturer writes · student reads own |
+| Feedback listings | `GET /api/students/{id}/feedback`, `GET /api/assessments/{id}/feedback`, `GET /api/assessments/{id}/students/{studentId}/feedback` | Own data · owning lecturer |
+| Audio | `GET`/`POST`/`DELETE /api/feedback/{id}/audio` | Owning lecturer · recipient student |
+| Questions | `GET`/`POST /api/feedback/{id}/feedback-queries`, `GET /api/students/{id}/feedback-queries`, `GET /api/lecturer/feedback-queries`, `POST /api/feedback-queries/{id}/answer` | Student asks · lecturer answers |
+| Tags | `GET /api/tags`, `GET /api/students/{id}/tag-summary`, `GET /api/students/{id}/tag-summary/per-year`, `GET /api/lecturer/tag-summary` | Vocabulary: authenticated · Summaries: own data |
+| Phrase bank | `GET`/`POST /api/phrases`, `PUT`/`DELETE /api/phrases/{id}` | Lecturer, own phrases only |
 
 ## Entity Relationship Diagrams
 
