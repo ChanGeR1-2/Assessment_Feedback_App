@@ -276,32 +276,24 @@ public class FeedbackService {
         if (student.getRole() != UserRole.STUDENT) {
             throw new InvalidRoleException(student.getId(), UserRole.STUDENT);
         }
-
         Assessment assessment = assessmentRepository.findById(createFeedbackRequest.assessmentId())
                 .orElseThrow(() -> new AssessmentNotFoundException(createFeedbackRequest.assessmentId()));
-
         CourseModule module = assessment.getModule();
-
         AppUser lecturer = userRepository.findAppUserById(lecturerId)
                 .orElseThrow(() -> new UserNotFoundException(lecturerId));
-
         if (lecturer.getRole() != UserRole.LECTURER) {
             throw new InvalidRoleException(lecturer.getId(), UserRole.LECTURER);
         }
-
         if (module.getLecturer() == null
                 || !Objects.equals(module.getLecturer().getId(), lecturer.getId())) {
             throw new ForbiddenException("You are not authorised to submit feedback for this module.");
         }
-
         if (feedbackRepository.existsByAssessmentIdAndStudentId(assessment.getId(), student.getId())) {
             throw new FeedbackExistsException(assessment.getId(), student.getId());
         }
-
         if (!enrolmentRepository.existsByStudentIdAndModuleId(student.getId(), module.getId())) {
             throw new StudentNotEnrolledException(student.getId(), module.getId());
         }
-
         Feedback feedback = new Feedback(student, lecturer, assessment, (short) 0, // initial mark is 0
                 createFeedbackRequest.summary());
 

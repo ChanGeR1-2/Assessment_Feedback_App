@@ -12,6 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+/**
+ * Integration tests for {@link FeedbackRepository}, chosen to prevent issues with duplication of records when two
+ * collections are fetched in the same query (e.g. {@link FeedbackRepository#findByIdWithDetails(Long)}).
+ * The tests are not exhaustive, but should cover the most important cases.
+ */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
